@@ -2,7 +2,13 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { extractPsalm, parseBibleCsv, PSALMS_BOOK_NUMBER } from '../src/text/bibleImport.js';
+import {
+  extractPsalm,
+  parseBibleCsv,
+  parseVerseReference,
+  selectVerses,
+  PSALMS_BOOK_NUMBER,
+} from '../src/text/bibleImport.js';
 
 describe('parseBibleCsv', () => {
   it('parses quoted, semicolon-delimited rows', () => {
@@ -51,6 +57,86 @@ describe('extractPsalm', () => {
     const rows = parseBibleCsv('"19";"1";"1";"Autuas se mies. "');
     expect(extractPsalm(rows, 1)).toEqual([{ number: 1, text: 'Autuas se mies.' }]);
     expect(PSALMS_BOOK_NUMBER).toBe(19);
+  });
+});
+
+describe('parseVerseReference', () => {
+  it('parses a psalm with no verse restriction (whole psalm)', () => {
+    expect(parseVerseReference('3')).toEqual({ psalmNumber: 3, ranges: [] });
+  });
+
+  it('parses a single verse', () => {
+    expect(parseVerseReference('3:5')).toEqual({ psalmNumber: 3, ranges: [{ start: 5, end: 5 }] });
+  });
+
+  it('parses a single range', () => {
+    expect(parseVerseReference('3:1-4')).toEqual({ psalmNumber: 3, ranges: [{ start: 1, end: 4 }] });
+  });
+
+  it('parses multiple comma-separated ranges and singles', () => {
+    expect(parseVerseReference('3:1-4,6-8,10')).toEqual({
+      psalmNumber: 3,
+      ranges: [
+        { start: 1, end: 4 },
+        { start: 6, end: 8 },
+        { start: 10, end: 10 },
+      ],
+    });
+  });
+
+  it('tolerates whitespace around numbers, dashes, and commas', () => {
+    expect(parseVerseReference(' 3 : 1 - 4 , 6 - 8 ')).toEqual({
+      psalmNumber: 3,
+      ranges: [
+        { start: 1, end: 4 },
+        { start: 6, end: 8 },
+      ],
+    });
+  });
+
+  it('rejects an empty reference', () => {
+    expect(() => parseVerseReference('')).toThrow();
+    expect(() => parseVerseReference('   ')).toThrow();
+  });
+
+  it('rejects a non-numeric psalm number', () => {
+    expect(() => parseVerseReference('abc:1-4')).toThrow();
+  });
+
+  it('rejects a range with start greater than end', () => {
+    expect(() => parseVerseReference('3:8-6')).toThrow();
+  });
+
+  it('rejects an empty range segment', () => {
+    expect(() => parseVerseReference('3:1-4,,6-8')).toThrow();
+  });
+
+  it('rejects zero or negative numbers', () => {
+    expect(() => parseVerseReference('0:1-4')).toThrow();
+    expect(() => parseVerseReference('3:0-4')).toThrow();
+  });
+});
+
+describe('selectVerses', () => {
+  const verses = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({ number: n, text: `v${n}` }));
+
+  it('returns everything when ranges is empty', () => {
+    expect(selectVerses(verses, [])).toEqual(verses);
+  });
+
+  it('filters to the given ranges', () => {
+    expect(selectVerses(verses, [{ start: 2, end: 4 }])).toEqual([
+      { number: 2, text: 'v2' },
+      { number: 3, text: 'v3' },
+      { number: 4, text: 'v4' },
+    ]);
+  });
+
+  it('returns verses in ascending order regardless of range order in the reference', () => {
+    expect(selectVerses(verses, [
+      { start: 6, end: 8 },
+      { start: 1, end: 4 },
+    ])).toEqual(verses.filter((v) => v.number <= 4 || v.number >= 6));
   });
 });
 

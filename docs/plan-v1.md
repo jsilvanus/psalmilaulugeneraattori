@@ -281,7 +281,13 @@ as alternatives.
 Vanilla TS + Vite, no framework (not enough surface area here to justify
 one). Four sections wired directly to the engine:
 - **VerseInput** — textarea for `*`/`†`-marked text + language selector,
-  surfaces parser errors inline.
+  surfaces parser errors inline. Also includes an "Import from Bible" flow:
+  a reference input (`"3:1-4,6-8"`, `"3:5"`, or just `"3"` for the whole
+  psalm, parsed by `parseVerseReference`/`selectVerses` in `bibleImport.ts`)
+  that lazily fetches `/raamattu.csv` (served via Vite's `publicDir`
+  pointing at the repo-root `data/` folder), extracts and filters the
+  requested verses, and drops the raw (still unmarked) text into the
+  textarea, auto-switching the language selector to Finnish.
 - **ToneSelector** — a tone-set selector (initially just "Catholic/
   Gregorian", with room to add "Finnish Lutheran" later with no code
   changes) plus a tone dropdown scoped to the selected set, and a "custom"
@@ -314,11 +320,15 @@ one). Four sections wired directly to the engine:
 7. `antiphon/modeDetect.ts`, `antiphon/toneMatch.ts` + tests against a
    handful of real chant-book antiphon incipits with known correct modes.
 8. Wire AntiphonInput into the rendering flow.
-9. Done: `data/raamattu.csv` committed, `text/bibleImport.ts` (`parseBibleCsv`
-   + `extractPsalm`) implemented and tested against both inline fixtures and
-   the real committed file. Not yet done: wiring an "import psalm N" flow
-   into VerseInput/the UI, and turning the imported plain text into
-   `*`/`†`-marked cola (deliberately deferred, see above).
+9. Done: `data/raamattu.csv` committed, `text/bibleImport.ts`
+   (`parseBibleCsv`, `extractPsalm`, `parseVerseReference`, `selectVerses`)
+   implemented and tested against inline fixtures and the real committed
+   file; Vite's `publicDir` serves the CSV to the browser; VerseInput's
+   "Import from Bible" flow (reference string → fetch/parse/select → raw
+   text into the textarea, language auto-set to Finnish) is wired and
+   verified end-to-end in a real browser. Turning the imported plain text
+   into `*`/`†`-marked cola remains deliberately deferred (see above) — the
+   import flow's status message reminds the user to add the marks by hand.
 10. (Stretch) `exsurge.js` spike + integration behind the feature flag.
 
 ## Phase right after v1: ecumenical daily psalter

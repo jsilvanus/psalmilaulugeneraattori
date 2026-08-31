@@ -94,3 +94,74 @@ export function extractPsalm(
     .sort((a, b) => a.verse - b.verse)
     .map((row) => ({ number: row.verse, text: cleanVerseText(row.text) }));
 }
+
+export interface VerseRange {
+  start: number;
+  end: number;
+}
+
+export interface VerseReference {
+  psalmNumber: number;
+  /** Empty means "the whole psalm" -- no restriction. */
+  ranges: VerseRange[];
+}
+
+function parsePositiveInt(text: string, label: string): number {
+  if (!/^\d+$/.test(text)) {
+    throw new Error(`Invalid ${label}: expected a positive integer, got "${text}".`);
+  }
+  const n = Number(text);
+  if (n < 1) {
+    throw new Error(`Invalid ${label}: must be at least 1.`);
+  }
+  return n;
+}
+
+/**
+ * Parses a psalm/verse-range reference such as "3:1-4,6-8", "3:5" (a single
+ * verse), or just "3" (the whole psalm). Multiple ranges are comma-separated
+ * and need not be in verse order -- selectVerses always returns them in
+ * ascending verse order regardless of how the ranges were listed.
+ */
+export function parseVerseReference(spec: string): VerseReference {
+  const trimmed = spec.trim();
+  if (trimmed.length === 0) {
+    throw new Error('Empty verse reference.');
+  }
+
+  const colonIndex = trimmed.indexOf(':');
+  const psalmPart = colonIndex === -1 ? trimmed : trimmed.slice(0, colonIndex);
+  const rangesPart = colonIndex === -1 ? undefined : trimmed.slice(colonIndex + 1);
+
+  const psalmNumber = parsePositiveInt(psalmPart.trim(), `psalm number "${psalmPart}"`);
+
+  if (rangesPart === undefined || rangesPart.trim().length === 0) {
+    return { psalmNumber, ranges: [] };
+  }
+
+  const ranges = rangesPart.split(',').map((segment) => {
+    const part = segment.trim();
+    if (part.length === 0) {
+      throw new Error(`Empty verse range in reference "${spec}".`);
+    }
+    const dashIndex = part.indexOf('-');
+    if (dashIndex === -1) {
+      const n = parsePositiveInt(part, `verse "${part}"`);
+      return { start: n, end: n };
+    }
+    const start = parsePositiveInt(part.slice(0, dashIndex).trim(), `verse range start in "${part}"`);
+    const end = parsePositiveInt(part.slice(dashIndex + 1).trim(), `verse range end in "${part}"`);
+    if (start > end) {
+      throw new Error(`Verse range "${part}" has a start greater than its end.`);
+    }
+    return { start, end };
+  });
+
+  return { psalmNumber, ranges };
+}
+
+/** Filters verses to the given ranges (or all of them, if ranges is empty), preserving verse order. */
+export function selectVerses(verses: RawImportedVerse[], ranges: VerseRange[]): RawImportedVerse[] {
+  if (ranges.length === 0) return verses;
+  return verses.filter((v) => ranges.some((r) => v.number >= r.start && v.number <= r.end));
+}
