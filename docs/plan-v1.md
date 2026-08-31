@@ -20,13 +20,19 @@ audio synthesis are explicitly deferred to later phases.
   `*` (required, mediant split) and optional `†` or `+` (flex, making the
   verse tripartite; `+` is accepted as a plain-keyboard alias for `†` and
   normalized to it on parse). No automatic unmarked-text splitting in v1.
-- Psalm text may also be ingested from the user's existing Bible XML file
-  (one Bible verse usually corresponds to one psalm-wise bipartite/tripartite
-  verse) — this importer is in scope for v1, but the concrete XML schema is
-  not yet known ("will be studied when we go there"), so it's built as a
-  late step once the actual file can be inspected, behind a generic
-  source-adapter interface so the rest of the engine never depends on the
-  schema's specifics.
+- Psalm text is ingested from the user's Finnish Bible, which turned out to
+  be a semicolon-delimited CSV (`data/raamattu.csv`, ~5.3MB, committed to the
+  repo), not XML as first assumed — one row per verse: `"book";"chapter";
+  "verse";"text"`, quoted fields with doubled-quote escaping. Psalms is book
+  19 (all 150 psalms, 2461 verses present). The importer (`text/
+  bibleImport.ts`) parses this format and extracts one psalm's verses,
+  stripping an embedded Masoretic/Hebrew cross-reference some verses carry
+  mid-text (e.g. `"...Absalomia. (3:2) Herra..."`, from this edition not
+  counting a psalm's superscription as verse 1 while Hebrew numbering does).
+  The source has **no** chant caesura markup at all (plain prose) — the
+  importer only produces clean raw verse text; turning that into
+  `*`/`†`-marked, chantable cola is deliberately left as later work ("we'll
+  need to further enhance this data later"), not attempted here.
 - Tone/mode data must **not** be hardcoded to one tradition. The Finnish
   Evangelical Lutheran Church uses different classic tone/mode variants than
   the Catholic (Solesmes/Gregorian) tradition — exact Lutheran tone data to
@@ -57,7 +63,7 @@ psalmilaulugeneraattori/
         text/
           types.ts              # PsalmVerse, Colon, ColonRole
           verseParser.ts        # * / † (or +) splitting -> PsalmVerse
-          bibleXmlImport.ts     # generic source-adapter; concrete schema TBD
+          bibleImport.ts        # parses data/raamattu.csv, extracts one psalm's raw verses
         phonology/
           types.ts              # Syllable, Word, Lang
           finnish.ts             # analyzeWord for 'fi'
@@ -110,23 +116,29 @@ termination on `†` then `*` (both required together); otherwise require
 exactly one `*` and split into mediant/termination. Multiple `*`, or `†`
 without `*`, are parse errors surfaced with position — don't silently guess.
 
-### Bible XML import (`text/bibleXmlImport.ts`)
-The user has an existing Bible XML file psalms can be pulled from (one Bible
-verse usually corresponds to one psalm-wise bipartite/tripartite verse), and
-wants this in v1 — but the concrete schema (Zefania, OSIS, USFX, or custom)
-isn't known yet and will only be inspected once we reach this step. Design
-around a small adapter interface so nothing else in the engine depends on
-the schema:
+### Bible CSV import (`text/bibleImport.ts`)
+Turned out to be CSV, not XML: `data/raamattu.csv`, one row per verse,
+semicolon-delimited, every field double-quoted with doubled-quote escaping
+(`"1";"1";"3";"Ja Jumala sanoi: ""Tulkoon valkeus"". Ja valkeus tuli. "`).
+No header row. Psalms is book 19 (confirmed: all 150 psalms, 2461 verses).
 ```ts
-interface RawImportedVerse { number?: number; text: string; } // may lack * / † markup
-function importPsalmFromXml(xml: string, psalmNumber: number): RawImportedVerse[];
+interface BibleVerseRow { book: number; chapter: number; verse: number; text: string; }
+interface RawImportedVerse { number: number; text: string; } // no * / † markup -- see below
+const PSALMS_BOOK_NUMBER = 19;
+function parseBibleCsv(csvText: string): BibleVerseRow[];
+function extractPsalm(rows: BibleVerseRow[], psalmNumber: number, bookNumber?: number): RawImportedVerse[];
 ```
-Implementation is deferred until the actual XML file is inspected (first
-sub-step: open the real file, identify book/chapter/verse structure and
-whatever caesura markup, if any, it already carries). If the source text
-lacks `*`/`†` markers entirely, this adapter is where any needed heuristic or
-manual-annotation step lives — do not let this leak into `verseParser.ts`,
-which stays a pure marker-based parser.
+`extractPsalm` filters by book+chapter, sorts by verse, and strips an
+embedded Masoretic/Hebrew verse-number cross-reference some verses carry
+mid-text (e.g. Psalm 3:1 ends its superscription with `"...Absalomia. (3:2)
+Herra, kuinka..."` — this edition doesn't count the superscription as verse
+1 while Hebrew numbering does, so the marker can land mid-verse, not just at
+the start; the regex strips it wherever it occurs). The source is plain
+prose with **no** caesura markup anywhere — `extractPsalm` deliberately only
+produces clean raw text; turning that into `*`/`†`-marked cola is left as
+later "enhance this data" work, not attempted by this importer. Do not let
+that future step leak into `verseParser.ts`, which stays a pure
+marker-based parser.
 
 ### Phonology (`phonology/`)
 ```ts
@@ -302,9 +314,11 @@ one). Four sections wired directly to the engine:
 7. `antiphon/modeDetect.ts`, `antiphon/toneMatch.ts` + tests against a
    handful of real chant-book antiphon incipits with known correct modes.
 8. Wire AntiphonInput into the rendering flow.
-9. Inspect the user's actual Bible XML file, identify its schema, and
-   implement `text/bibleXmlImport.ts` against it; wire a simple "import
-   psalm N" flow into VerseInput as an alternative to pasting marked text.
+9. Done: `data/raamattu.csv` committed, `text/bibleImport.ts` (`parseBibleCsv`
+   + `extractPsalm`) implemented and tested against both inline fixtures and
+   the real committed file. Not yet done: wiring an "import psalm N" flow
+   into VerseInput/the UI, and turning the imported plain text into
+   `*`/`†`-marked cola (deliberately deferred, see above).
 10. (Stretch) `exsurge.js` spike + integration behind the feature flag.
 
 ## Phase right after v1: ecumenical daily psalter
@@ -340,10 +354,12 @@ speculatively designing it now.
   shipped scale-degree numbers against an authoritative psalm-tone table
   (flagged above as a real risk — remembered numbers should not go
   unverified into shipped data).
-- Before implementing `bibleXmlImport.ts`, open the actual XML file and
-  confirm its structure (book/chapter/verse elements, any existing caesura
-  markup) rather than assuming a named schema — this was explicitly left
-  open by the user ("will be studied when we go there").
+- Done: the Bible source turned out to be CSV, not XML. Confirmed structure
+  (book;chapter;verse;text, Psalms = book 19, 150 psalms/2461 verses, no
+  caesura markup, and the mid-verse Masoretic cross-reference quirk) and
+  `bibleImport.ts` is implemented and tested against it. Turning the plain
+  imported text into `*`/`†`-marked, chantable cola remains open, explicitly
+  deferred as future "enhance this data" work.
 - When the Finnish Lutheran tone/mode data is supplied later, it should slot
   in as a new `ToneSet` in `toneSets/registry.ts` with no changes needed to
   `fit.ts`, `gabc.ts`, or `abc.ts` — if adding it ever requires touching

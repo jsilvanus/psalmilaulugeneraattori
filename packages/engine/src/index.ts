@@ -1,5 +1,6 @@
 export * from './text/types.js';
 export * from './text/verseParser.js';
+export * from './text/bibleImport.js';
 
 export * from './phonology/types.js';
 export * from './phonology/analyze.js';
