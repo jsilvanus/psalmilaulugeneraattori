@@ -3,6 +3,8 @@ import { listToneSets, type ToneFormula } from '@psalmigen/engine';
 export interface ToneSelectorSection {
   element: HTMLElement;
   getTone(): ToneFormula;
+  /** Programmatically selects a built-in tone (e.g. from an antiphon-match suggestion). */
+  selectTone(toneSetId: string, toneId: string): void;
 }
 
 function labeled(text: string, el: HTMLElement): HTMLLabelElement {
@@ -72,6 +74,13 @@ export function createToneSelector(): ToneSelectorSection {
       const tone = ts?.tones.find((t) => t.id === toneSelect.value);
       if (!tone) throw new Error('No tone selected.');
       return tone;
+    },
+    selectTone(toneSetId, toneId) {
+      setSelect.value = toneSetId;
+      toneLabel.style.display = '';
+      customArea.style.display = 'none';
+      populateTones(toneSetId);
+      toneSelect.value = toneId;
     },
   };
 }

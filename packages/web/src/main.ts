@@ -10,6 +10,7 @@ import {
 } from '@psalmigen/engine';
 import { createVerseInput } from './ui/VerseInput.js';
 import { createToneSelector } from './ui/ToneSelector.js';
+import { createAntiphonInput } from './ui/AntiphonInput.js';
 import { createRenderPane } from './ui/RenderPane.js';
 
 const app = document.getElementById('app');
@@ -20,13 +21,23 @@ heading.textContent = 'psalmilaulugeneraattori';
 
 const verseInput = createVerseInput();
 const toneSelector = createToneSelector();
+const antiphonInput = createAntiphonInput();
 const renderPane = createRenderPane();
+
+antiphonInput.onApply((toneSetId, toneId) => toneSelector.selectTone(toneSetId, toneId));
 
 const renderButton = document.createElement('button');
 renderButton.textContent = 'Render';
 renderButton.type = 'button';
 
-app.append(heading, verseInput.element, toneSelector.element, renderButton, renderPane.element);
+app.append(
+  heading,
+  verseInput.element,
+  toneSelector.element,
+  antiphonInput.element,
+  renderButton,
+  renderPane.element,
+);
 
 renderButton.addEventListener('click', () => {
   try {

@@ -11,3 +11,6 @@ export { catholicGregorianToneSet } from './tone/toneSets/catholicGregorian.js';
 
 export * from './output/gabc.js';
 export * from './output/abc.js';
+
+export * from './antiphon/modeDetect.js';
+export * from './antiphon/toneMatch.js';
