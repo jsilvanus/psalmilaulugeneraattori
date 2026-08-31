@@ -1,0 +1,46 @@
+import type { PitchedColon } from '../tone/fit.js';
+import type { ScaleDegree } from '../tone/types.js';
+
+// GABC pitch letters run 'a' (lowest) to 'm' (highest), each one diatonic
+// step apart; the clef then fixes what absolute pitch a letter represents.
+// We anchor the tone's final at 'h' (index 7), giving room for roughly a
+// 7th below and a 5th above, which comfortably covers the ranges used here.
+const GABC_LETTERS = 'abcdefghijklm';
+const FINAL_LETTER_INDEX = GABC_LETTERS.indexOf('h');
+
+// NOTE: hasBFlat tones (5/6-style signature) are not yet reflected in the
+// emitted pitch letters -- GABC's accidental syntax needs to be verified
+// against the Gregorio spec before it's implemented, rather than guessed.
+// This is a known v1 gap, not a silent inaccuracy: no flat is ever emitted.
+function gabcPitchLetter(degree: ScaleDegree): string {
+  const index = FINAL_LETTER_INDEX + degree;
+  const letter = GABC_LETTERS[index];
+  if (letter === undefined) {
+    throw new Error(`Scale degree ${degree} is out of the supported GABC pitch range.`);
+  }
+  return letter;
+}
+
+function emitSyllable(text: string, notes: ScaleDegree[]): string {
+  return `${text}(${notes.map(gabcPitchLetter).join('')})`;
+}
+
+const BOUNDARY_MARKER: Record<PitchedColon['role'], string> = {
+  flex: ':',
+  mediant: ':',
+  termination: '::',
+};
+
+function emitColon(colon: PitchedColon): string {
+  let out = '';
+  colon.syllables.forEach((syllable, idx) => {
+    const piece = emitSyllable(syllable.text, syllable.notes);
+    out += idx > 0 && syllable.isWordStart ? ` ${piece}` : piece;
+  });
+  return `${out} ${BOUNDARY_MARKER[colon.role]}`;
+}
+
+/** Renders a fitted verse (its cola, already pitched by fit.ts) as GABC text. */
+export function emitGabc(cola: PitchedColon[]): string {
+  return cola.map(emitColon).join(' ');
+}
