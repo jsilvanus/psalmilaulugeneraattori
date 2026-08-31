@@ -1,0 +1,15 @@
+{
+  "name": "@psalmigen/engine",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "abcjs": "^6.7.0"
+  }
+}
