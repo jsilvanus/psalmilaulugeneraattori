@@ -32,16 +32,9 @@ function collectPitches(abcText: string): number[] {
   return pitches;
 }
 
-/**
- * Parses a user-supplied ABC antiphon melody (reusing abcjs's own parser
- * rather than a second one) and extracts the handful of facts mode
- * detection needs: the first and final pitch, the melody's range, and its
- * most common pitch as a proxy for the reciting tone.
- */
-export function analyzeMelody(abcText: string): MelodyAnalysis {
-  const pitches = collectPitches(abcText);
+function summarizePitches(pitches: number[]): MelodyAnalysis {
   if (pitches.length === 0) {
-    throw new Error('The ABC melody has no notes to analyze.');
+    throw new Error('The melody has no notes to analyze.');
   }
 
   const frequency = new Map<number, number>();
@@ -62,6 +55,81 @@ export function analyzeMelody(abcText: string): MelodyAnalysis {
     ambitusHigh: Math.max(...pitches),
     mostFrequentPitch,
   };
+}
+
+/**
+ * Parses a user-supplied ABC antiphon melody (reusing abcjs's own parser
+ * rather than a second one) and extracts the handful of facts mode
+ * detection needs: the first and final pitch, the melody's range, and its
+ * most common pitch as a proxy for the reciting tone.
+ */
+export function analyzeMelody(abcText: string): MelodyAnalysis {
+  return summarizePitches(collectPitches(abcText));
+}
+
+// GABC pitch letters run 'a' (lowest) to 'm' (highest), one diatonic step
+// apart -- same alphabet output/gabc.ts emits. Line 1 (bottom) sits at 'b',
+// each staff line two letters higher than the last (line n -> index 2n-1),
+// matching real square-notation engraving.
+const GABC_LETTERS = 'abcdefghijklm';
+
+interface GabcClef {
+  letter: 'c' | 'f';
+  line: number;
+  /** Index just past the clef declaration's closing ")", for slicing it out of the score before scanning for notes. */
+  afterIndex: number;
+}
+
+function parseGabcClef(gabcText: string): GabcClef {
+  const match = /\(\s*([cf])b?([1-4])\s*\)/.exec(gabcText);
+  if (!match) {
+    throw new Error(
+      'No clef (e.g. "(c3)") found in the GABC score -- mode detection needs it to read pitches.',
+    );
+  }
+  return {
+    letter: match[1] as 'c' | 'f',
+    line: Number(match[2]),
+    afterIndex: match.index + match[0].length,
+  };
+}
+
+function gabcLetterToPitch(letter: string, clef: GabcClef): number {
+  const letterIndex = GABC_LETTERS.indexOf(letter);
+  const clefLetterIndex = 2 * clef.line - 1; // line n -> 'b'/'d'/'f'/'h' at index 1/3/5/7
+  const clefNoteIndex = clef.letter === 'c' ? 0 : 3; // C=0, F=3, matching abcjs's own pitch-number convention below
+  return clefNoteIndex + (letterIndex - clefLetterIndex);
+}
+
+function collectGabcPitches(gabcText: string): number[] {
+  const clef = parseGabcClef(gabcText);
+  // Drop the leading clef declaration itself so its "c"/"f" letter is never
+  // mistaken for a pitch letter (both fall inside the a-m alphabet).
+  const afterClef = gabcText.slice(clef.afterIndex);
+
+  const pitches: number[] = [];
+  const noteGroup = /\(([^)]*)\)/g;
+  let match: RegExpExecArray | null;
+  while ((match = noteGroup.exec(afterClef))) {
+    for (const ch of match[1]!) {
+      if (ch >= 'a' && ch <= 'm') pitches.push(gabcLetterToPitch(ch, clef));
+    }
+  }
+  return pitches;
+}
+
+/**
+ * Parses a user-supplied GABC antiphon melody and extracts the same facts
+ * `analyzeMelody` does for ABC, so mode detection and tone matching work
+ * identically regardless of which notation the user pasted. Pitch letters
+ * are read relative to the score's own clef declaration (e.g. "(c3)",
+ * "(f4)") -- see gabcLetterToPitch. Known v1 simplification: only the
+ * score's first/leading clef is honored; a mid-score clef change is not
+ * tracked (matching the clef-agnostic simplifications already documented
+ * in output/gabc.ts).
+ */
+export function analyzeMelodyGabc(gabcText: string): MelodyAnalysis {
+  return summarizePitches(collectGabcPitches(gabcText));
 }
 
 const NOTE_LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];

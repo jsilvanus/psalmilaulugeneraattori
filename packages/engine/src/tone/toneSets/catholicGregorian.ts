@@ -1,4 +1,4 @@
-import type { CadenceFormula, ScaleDegree, ToneFormula, ToneSet } from '../types.js';
+import type { CadenceFormula, Differentia, ScaleDegree, ToneFormula, ToneSet } from '../types.js';
 
 /*
  * DATA ACCURACY NOTE (see project plan's "known risks"):
@@ -17,6 +17,18 @@ import type { CadenceFormula, ScaleDegree, ToneFormula, ToneSet } from '../types
  * structurally-correct placeholder, not as historically precise chant-book
  * data, and replace them with the real note-by-note formulas before relying
  * on this for actual liturgical performance.
+ *
+ * TERMINATION MULTIPLICITY: real chant books give each tone several named
+ * endings ("differentiae" -- e.g. Tonus I's "D"/"a"/"g" endings), each
+ * chosen by the choir to hand off smoothly into whichever antiphon follows
+ * (see antiphon/toneMatch.ts). `genericTerminationSet` below models that
+ * MULTIPLICITY -- three distinctly-shaped, labeled endings per tone -- but
+ * the three shapes are still a structural placeholder, not yet the real
+ * Solesmes (or Finnish Kirkkokäsikirja) figures for each named ending.
+ * Replace with real note-by-note differentiae, transcribed from an
+ * authoritative source (Liber Usualis / Antiphonale, or the Finnish
+ * Kirkkokäsikirja I's own psalm-tone appendix -- see refs/jpkirja.doc),
+ * before relying on this for actual liturgical performance.
  */
 
 function genericMediant(reciting: ScaleDegree): CadenceFormula {
@@ -27,12 +39,26 @@ function genericMediant(reciting: ScaleDegree): CadenceFormula {
   };
 }
 
-function genericTermination(reciting: ScaleDegree, final: ScaleDegree): CadenceFormula {
+function genericTermination(
+  reciting: ScaleDegree,
+  endDegree: ScaleDegree,
+  label: string,
+): Differentia {
   return {
+    label,
     preparatory: [{ degree: reciting }],
-    accentNote: { degree: final + 1 },
-    postAccent: [{ degree: final }],
+    accentNote: { degree: endDegree + 1 },
+    postAccent: [{ degree: endDegree }],
   };
+}
+
+/** Three structurally-distinct, labeled placeholder endings -- see the DATA ACCURACY NOTE above. */
+function genericTerminationSet(reciting: ScaleDegree, final: ScaleDegree): Differentia[] {
+  return [
+    genericTermination(reciting, final, 'a'),
+    genericTermination(reciting, final + 2, 'b'),
+    genericTermination(reciting, reciting - 1, 'c'),
+  ];
 }
 
 function genericFlex(reciting: ScaleDegree): CadenceFormula {
@@ -54,7 +80,7 @@ function makeTone(id: string, name: string, reciting: ScaleDegree, hasBFlat = fa
     intonation: [{ degree: reciting - 2 }, { degree: reciting - 1 }],
     flex: genericFlex(reciting),
     mediant: genericMediant(reciting),
-    termination: [genericTermination(reciting, final)],
+    termination: genericTerminationSet(reciting, final),
   };
 }
 
@@ -66,7 +92,7 @@ const tonusPeregrinus: ToneFormula = {
   secondReciting: 3, // G, for the verse's second half -- the tone's namesake asymmetry
   intonation: [{ degree: 2 }, { degree: 3 }],
   mediant: genericMediant(4),
-  termination: [genericTermination(3, 0)],
+  termination: genericTerminationSet(3, 0),
 };
 
 export const catholicGregorianToneSet: ToneSet = {

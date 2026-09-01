@@ -5,15 +5,32 @@ import type { ToneSet } from '../src/tone/types.js';
 import type { MelodyAnalysis } from '../src/antiphon/modeDetect.js';
 
 function analysis(overrides: Partial<MelodyAnalysis>): MelodyAnalysis {
-  return { firstPitch: 0, finalPitch: 0, ambitusLow: 0, ambitusHigh: 0, mostFrequentPitch: 0, ...overrides };
+  return {
+    firstPitch: 0,
+    finalPitch: 0,
+    ambitusLow: 0,
+    ambitusHigh: 0,
+    mostFrequentPitch: 0,
+    ...overrides,
+  };
 }
 
 describe('matchTone', () => {
-  it('uses the tone set default tone for the mode, with no alternates when there is only one termination', () => {
-    const result = matchTone(catholicGregorianToneSet, 1, analysis({ firstPitch: 4, finalPitch: 0 }));
+  it('uses the tone set default tone for the mode, offering its other differentiae as labeled alternates', () => {
+    const result = matchTone(
+      catholicGregorianToneSet,
+      1,
+      analysis({ firstPitch: 4, finalPitch: 0 }),
+    );
     expect(result.tone.id).toBe('tonus-1');
-    expect(result.differentiaIndex).toBe(0);
-    expect(result.alternates).toEqual([]);
+    // catholicGregorian ships 3 labeled differentiae ('a'/'b'/'c') per tone.
+    expect(result.differentiaLabel).toMatch(/^[abc]$/);
+    expect(result.alternates).toHaveLength(2);
+    expect(new Set([result.differentiaLabel, ...result.alternates.map((a) => a.label)])).toEqual(
+      new Set(['a', 'b', 'c']),
+    );
+    // Alternates are sorted best (smallest distance) first.
+    expect(result.alternates[0]!.distance).toBeLessThanOrEqual(result.alternates[1]!.distance);
   });
 
   it('never hardcodes the mode->tone pairing, deferring to the ToneSet', () => {
