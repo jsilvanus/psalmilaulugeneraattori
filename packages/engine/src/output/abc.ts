@@ -4,11 +4,41 @@ import type { ScaleDegree } from '../tone/types.js';
 // Natural-note ABC pitch tokens across several octaves (comma = down an
 // octave, apostrophe = up an octave), each entry one diatonic step apart.
 const ABC_STEPS = [
-  'C,,', 'D,,', 'E,,', 'F,,', 'G,,', 'A,,', 'B,,',
-  'C,', 'D,', 'E,', 'F,', 'G,', 'A,', 'B,',
-  'C', 'D', 'E', 'F', 'G', 'A', 'B',
-  'c', 'd', 'e', 'f', 'g', 'a', 'b',
-  "c'", "d'", "e'", "f'", "g'", "a'", "b'",
+  'C,,',
+  'D,,',
+  'E,,',
+  'F,,',
+  'G,,',
+  'A,,',
+  'B,,',
+  'C,',
+  'D,',
+  'E,',
+  'F,',
+  'G,',
+  'A,',
+  'B,',
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'A',
+  'B',
+  'c',
+  'd',
+  'e',
+  'f',
+  'g',
+  'a',
+  'b',
+  "c'",
+  "d'",
+  "e'",
+  "f'",
+  "g'",
+  "a'",
+  "b'",
 ];
 // Anchoring the final at 'C,' keeps typical chant ranges within the "C,-c"
 // window (see plan), rather than at the array's true middle.
@@ -16,7 +46,8 @@ const FINAL_INDEX = ABC_STEPS.indexOf('C,');
 
 // NOTE: hasBFlat tones are not yet reflected here -- see the matching note
 // in gabc.ts; K:C (no accidentals) is used unconditionally in v1.
-function abcPitch(degree: ScaleDegree): string {
+// Exported for reuse by output/abcChord.ts (chordal/Anglican rendering).
+export function abcPitch(degree: ScaleDegree): string {
   const token = ABC_STEPS[FINAL_INDEX + degree];
   if (token === undefined) {
     throw new Error(`Scale degree ${degree} is out of the supported ABC pitch range.`);

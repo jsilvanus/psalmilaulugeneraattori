@@ -1,10 +1,12 @@
 import type { ToneSet } from '../types.js';
 import { catholicGregorianToneSet } from './catholicGregorian.js';
 import { finnishGregorianToneSet } from './finnishGregorian.js';
+import { finnishOtherToneSet } from './finnishOther.js';
 
 const registry = new Map<string, ToneSet>([
   [catholicGregorianToneSet.id, catholicGregorianToneSet],
   [finnishGregorianToneSet.id, finnishGregorianToneSet],
+  [finnishOtherToneSet.id, finnishOtherToneSet],
 ]);
 
 /**
