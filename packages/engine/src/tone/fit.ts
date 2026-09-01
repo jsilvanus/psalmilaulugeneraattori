@@ -1,6 +1,6 @@
 import type { Word } from '../phonology/types.js';
 import type { ColonRole } from '../text/types.js';
-import type { CadenceFormula, ScaleDegree, ToneFormula } from './types.js';
+import type { AccentPoint, CadenceFormula, ScaleDegree, ToneFormula } from './types.js';
 
 export interface PitchedSyllable {
   text: string;
@@ -36,44 +36,31 @@ function flattenWords(words: Word[]): FlatSyllable[] {
   );
 }
 
-function findAnchorIndex(syllables: FlatSyllable[]): number {
-  for (let i = syllables.length - 1; i >= 0; i--) {
+/** Last stressed syllable index within [0, rangeEnd), or -1 if none. */
+function findLastStressedIndex(syllables: FlatSyllable[], rangeEnd: number): number {
+  for (let i = rangeEnd - 1; i >= 0; i--) {
     if (syllables[i]!.hasStress) return i;
   }
-  // No stressed syllable found (shouldn't normally happen): anchor to the last syllable.
-  return syllables.length - 1;
-}
-
-export interface FitColonOptions {
-  isFirstColonOfFirstVerse?: boolean;
+  return -1;
 }
 
 /**
- * The classical psalm-tone "pointing" algorithm: the reciting note carries
- * everything up to the last stressed syllable of the colon, then the
- * cadence formula's notes align to that stressed syllable (the anchor) and
- * whatever unstressed syllables follow it.
+ * Fits one accent point's preparatory/accentNote/postAccent notes onto
+ * `syllables[0..rangeEnd)`, anchored at `anchor`, mutating `result` in
+ * place. Returns the count of syllables (from index 0) left over before
+ * this accent's own preparatory notes -- callers fill that region with the
+ * plain reciting tone, or recurse into it for an earlier accent.
  */
-export function fitColon(
-  words: Word[],
-  formula: CadenceFormula,
-  recitingDegree: ScaleDegree,
-  intonation: { degree: ScaleDegree }[] | undefined,
-  options: FitColonOptions = {},
-): PitchedSyllable[] {
-  const syllables = flattenWords(words);
-  if (syllables.length === 0) return [];
-
-  const anchor = findAnchorIndex(syllables);
-  const result: PitchedSyllable[] = syllables.map((s) => ({
-    text: s.text,
-    notes: [],
-    isWordStart: s.isWordStart,
-  }));
-
-  // 1. Trailing (post-accent) syllables.
-  const trailing = syllables.slice(anchor + 1);
-  const expectedPost = formula.postAccent;
+function applyAccent(
+  result: PitchedSyllable[],
+  syllables: FlatSyllable[],
+  rangeEnd: number,
+  anchor: number,
+  point: AccentPoint,
+): number {
+  // 1. Trailing (post-accent) syllables, up to rangeEnd.
+  const trailing = syllables.slice(anchor + 1, rangeEnd);
+  const expectedPost = point.postAccent;
   if (trailing.length === expectedPost.length) {
     trailing.forEach((_, i) => {
       result[anchor + 1 + i]!.notes.push(expectedPost[i]!.degree);
@@ -95,7 +82,7 @@ export function fitColon(
     const fallbackDegree =
       expectedPost.length > 0
         ? expectedPost[expectedPost.length - 1]!.degree
-        : formula.accentNote.degree;
+        : point.accentNote.degree;
     trailing.forEach((_, i) => {
       const degree = i < expectedPost.length ? expectedPost[i]!.degree : fallbackDegree;
       result[anchor + 1 + i]!.notes.push(degree);
@@ -103,25 +90,73 @@ export function fitColon(
   }
 
   // 2. Accent syllable (placed first, ahead of any merged shortfall notes above).
-  result[anchor]!.notes.unshift(formula.accentNote.degree);
+  result[anchor]!.notes.unshift(point.accentNote.degree);
 
-  // 3. Preparatory notes, then plain reciting tone, walking backward from the accent.
+  // 3. Preparatory notes, walking backward from the accent; whatever's left
+  // before them (from index 0) is this accent point's "reciting" region.
   const beforeAnchor = anchor; // count of syllables strictly before the anchor
-  const prep = formula.preparatory;
-  let recitingCount: number;
+  const prep = point.preparatory;
 
   if (beforeAnchor >= prep.length) {
-    recitingCount = beforeAnchor - prep.length;
+    const recitingCount = beforeAnchor - prep.length;
     for (let i = 0; i < prep.length; i++) {
       result[recitingCount + i]!.notes.push(prep[i]!.degree);
     }
-  } else {
-    // Too few syllables to fit the full preparatory cadence: use only the
-    // trailing slice of `preparatory` that fits, dropping the leading notes.
-    recitingCount = 0;
-    const startIdx = prep.length - beforeAnchor;
-    for (let i = 0; i < beforeAnchor; i++) {
-      result[i]!.notes.push(prep[startIdx + i]!.degree);
+    return recitingCount;
+  }
+  // Too few syllables to fit the full preparatory cadence: use only the
+  // trailing slice of `preparatory` that fits, dropping the leading notes.
+  const startIdx = prep.length - beforeAnchor;
+  for (let i = 0; i < beforeAnchor; i++) {
+    result[i]!.notes.push(prep[startIdx + i]!.degree);
+  }
+  return 0;
+}
+
+export interface FitColonOptions {
+  isFirstColonOfFirstVerse?: boolean;
+}
+
+/**
+ * The classical psalm-tone "pointing" algorithm: the reciting note carries
+ * everything up to the last stressed syllable of the colon, then the
+ * cadence formula's notes align to that stressed syllable (the anchor) and
+ * whatever unstressed syllables follow it. When the formula also defines a
+ * `secondaryAccent` and the colon has an earlier stressed syllable in the
+ * region that would otherwise be plain reciting tone, that region gets its
+ * own accent point the same way, recursively.
+ */
+export function fitColon(
+  words: Word[],
+  formula: CadenceFormula,
+  recitingDegree: ScaleDegree,
+  intonation: { degree: ScaleDegree }[] | undefined,
+  options: FitColonOptions = {},
+): PitchedSyllable[] {
+  const syllables = flattenWords(words);
+  if (syllables.length === 0) return [];
+
+  const result: PitchedSyllable[] = syllables.map((s) => ({
+    text: s.text,
+    notes: [],
+    isWordStart: s.isWordStart,
+  }));
+
+  // No stressed syllable found (shouldn't normally happen): anchor to the last syllable.
+  const anchor = findLastStressedIndex(syllables, syllables.length);
+  const primaryAnchor = anchor === -1 ? syllables.length - 1 : anchor;
+  let recitingCount = applyAccent(result, syllables, syllables.length, primaryAnchor, formula);
+
+  if (formula.secondaryAccent && recitingCount > 0) {
+    const secondaryAnchor = findLastStressedIndex(syllables, recitingCount);
+    if (secondaryAnchor !== -1) {
+      recitingCount = applyAccent(
+        result,
+        syllables,
+        recitingCount,
+        secondaryAnchor,
+        formula.secondaryAccent,
+      );
     }
   }
 
@@ -130,10 +165,10 @@ export function fitColon(
   }
 
   // Intonation: only for the first colon of a psalm's first verse, and only
-  // for the syllables strictly before the anchor (never overrides the
-  // accent/cadence itself).
+  // for the syllables strictly before the primary accent (never overrides
+  // the accent/cadence itself, secondary accent included).
   if (options.isFirstColonOfFirstVerse && intonation && intonation.length > 0) {
-    const count = Math.min(intonation.length, beforeAnchor);
+    const count = Math.min(intonation.length, primaryAnchor);
     for (let i = 0; i < count; i++) {
       result[i]!.notes = [intonation[i]!.degree];
     }

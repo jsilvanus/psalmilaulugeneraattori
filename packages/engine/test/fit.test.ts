@@ -171,6 +171,74 @@ describe('fitColon', () => {
     });
     expect(withoutIntonation.map((s) => s.notes)).toEqual([[5], [1], [0]]);
   });
+
+  it('applies a secondaryAccent to an earlier stressed syllable in the reciting-tone region', () => {
+    const formula: CadenceFormula = {
+      preparatory: [],
+      accentNote: { degree: 0 },
+      postAccent: [{ degree: -1 }, { degree: -2 }],
+      secondaryAccent: {
+        preparatory: [],
+        accentNote: { degree: 5 },
+        postAccent: [{ degree: 4 }, { degree: 3 }],
+      },
+    };
+    const result = fitColon(
+      colon([
+        { text: 'PRI', hasStress: true },
+        { text: 'mus', hasStress: false },
+        { text: 'a', hasStress: false },
+        { text: 'SE', hasStress: true },
+        { text: 'cun', hasStress: false },
+        { text: 'dus', hasStress: false },
+      ]),
+      formula,
+      9,
+      undefined,
+    );
+    expect(result.map((s) => s.notes)).toEqual([[5], [4], [3], [0], [-1], [-2]]);
+  });
+
+  it('leaves the secondaryAccent region on the plain reciting tone when it has no stressed syllable', () => {
+    const formula: CadenceFormula = {
+      preparatory: [{ degree: 1 }],
+      accentNote: { degree: 0 },
+      postAccent: [],
+      secondaryAccent: { preparatory: [], accentNote: { degree: 9 }, postAccent: [] },
+    };
+    const result = fitColon(
+      colon([
+        { text: 'a', hasStress: false },
+        { text: 'be', hasStress: false },
+        { text: 'MUS', hasStress: true },
+      ]),
+      formula,
+      5,
+      undefined,
+    );
+    expect(result.map((s) => s.notes)).toEqual([[5], [1], [0]]);
+  });
+
+  it('never applies secondaryAccent when the primary preparatory notes already consume the whole colon', () => {
+    const formula: CadenceFormula = {
+      preparatory: [{ degree: 5 }],
+      accentNote: { degree: 0 },
+      postAccent: [],
+      secondaryAccent: { preparatory: [], accentNote: { degree: 9 }, postAccent: [] },
+    };
+    const result = fitColon(
+      colon([
+        { text: 'PRI', hasStress: true },
+        { text: 'MEN', hasStress: true },
+      ]),
+      formula,
+      5,
+      undefined,
+    );
+    // The single preparatory note exactly fills the one syllable before the
+    // accent, leaving recitingCount at 0 -- no room for a secondaryAccent.
+    expect(result.map((s) => s.notes)).toEqual([[5], [0]]);
+  });
 });
 
 describe('fitVerse', () => {

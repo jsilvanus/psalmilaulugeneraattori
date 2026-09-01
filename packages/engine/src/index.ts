@@ -9,6 +9,7 @@ export * from './tone/types.js';
 export * from './tone/fit.js';
 export * from './tone/toneSets/registry.js';
 export { catholicGregorianToneSet } from './tone/toneSets/catholicGregorian.js';
+export { finnishGregorianToneSet } from './tone/toneSets/finnishGregorian.js';
 
 export * from './output/gabc.js';
 export * from './output/abc.js';
