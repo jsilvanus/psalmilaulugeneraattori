@@ -16,6 +16,7 @@ describe('finnishGregorianToneSet', () => {
       'tonus-6',
       'tonus-7',
       'tonus-8',
+      'tonus-peregrinus',
     ]);
   });
 
@@ -35,6 +36,12 @@ describe('finnishGregorianToneSet', () => {
     const tone = finnishGregorianToneSet.defaultToneForMode(3);
     expect(tone.mediant.secondaryAccent).toBeDefined();
     expect(tone.termination.find((d) => d.label === '3')?.secondaryAccent).toBeDefined();
+  });
+
+  it('tonus-peregrinus recites on A for the mediant but G for the termination', () => {
+    const tone = finnishGregorianToneSet.tones.find((t) => t.id === 'tonus-peregrinus')!;
+    expect(tone.reciting).toBe(4);
+    expect(tone.secondReciting).toBe(3);
   });
 
   it('fits a real Finnish verse onto tonus-1 end-to-end and emits valid GABC', () => {

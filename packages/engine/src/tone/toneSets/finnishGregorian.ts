@@ -223,6 +223,16 @@ const tones: ToneFormula[] = [
       differentia('6', [1, 2, 0], 0, [1, 1]), // C a h [(g) ga]/ a
     ],
   }),
+  buildTone({
+    id: 'tonus-peregrinus',
+    name: 'Tonus peregrinus',
+    // No intonation given.
+    reciting: 4, // A, for the flex/mediant
+    secondReciting: 3, // G, for the termination -- the tone's namesake asymmetry
+    flex: cadence([], 4, [3, 3]), // A a/ (g) g
+    mediant: cadence([3, 5, 4], 3, [2, 2]), // A g b a g/ (f) f
+    termination: [differentia('1', [0], 2, [2, 1, 0])], // G d f/ f ed
+  }),
 ];
 
 export const finnishGregorianToneSet: ToneSet = {
