@@ -13,6 +13,20 @@ export interface CadenceFormula {
   postAccent: CadenceNote[];
 }
 
+/**
+ * One named termination ending. Both the Catholic/Gregorian and Finnish
+ * Lutheran traditions give a single tone several such endings ("differentiae")
+ * -- the choir picks whichever one hands off smoothly into the antiphon that
+ * follows -- so a tone's terminations are always a labeled collection, never
+ * a single fixed cadence. `label` is optional only so hand-written/custom
+ * tone JSON (see the web UI's "Custom (JSON)" tone option) isn't forced to
+ * name each ending.
+ */
+export interface Differentia extends CadenceFormula {
+  /** Chant-book identifier for this ending (e.g. "a", "b", "D"). */
+  label?: string;
+}
+
 export type ChurchMode = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 export interface ToneFormula {
@@ -35,8 +49,8 @@ export interface ToneFormula {
   /** Only present for tones used on tripartite verses. */
   flex?: CadenceFormula;
   mediant: CadenceFormula;
-  /** One or more differentiae; index 0 is the default. */
-  termination: CadenceFormula[];
+  /** One or more named differentiae (endings); index 0 is the default. */
+  termination: Differentia[];
 }
 
 /**

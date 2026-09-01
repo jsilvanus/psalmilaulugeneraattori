@@ -24,7 +24,9 @@ const toneSelector = createToneSelector();
 const antiphonInput = createAntiphonInput();
 const renderPane = createRenderPane();
 
-antiphonInput.onApply((toneSetId, toneId) => toneSelector.selectTone(toneSetId, toneId));
+antiphonInput.onApply((toneSetId, toneId, differentiaIndex) =>
+  toneSelector.selectTone(toneSetId, toneId, differentiaIndex),
+);
 
 const renderButton = document.createElement('button');
 renderButton.textContent = 'Render';
@@ -44,6 +46,7 @@ renderButton.addEventListener('click', () => {
     const verses = parsePsalmText(verseInput.getText());
     const lang = verseInput.getLang();
     const tone = toneSelector.getTone();
+    const differentiaIndex = toneSelector.getDifferentiaIndex();
 
     const allCola: PitchedColon[] = [];
     verses.forEach((verse, idx) => {
@@ -55,7 +58,7 @@ renderButton.addEventListener('click', () => {
           .map((w) => analyzeWord(w, lang)),
       }));
       const isFirstVerseOfPsalm = verse.isFirstVerseOfPsalm ?? idx === 0;
-      allCola.push(...fitVerse(cola, tone, isFirstVerseOfPsalm));
+      allCola.push(...fitVerse(cola, tone, isFirstVerseOfPsalm, differentiaIndex));
     });
 
     renderPane.render(emitAbc(allCola, { title: 'Psalm' }), emitGabc(allCola));

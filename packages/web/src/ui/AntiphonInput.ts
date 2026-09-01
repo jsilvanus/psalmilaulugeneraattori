@@ -1,8 +1,16 @@
-import { analyzeMelody, detectMode, matchTone, catholicGregorianToneSet } from '@psalmigen/engine';
+import {
+  analyzeMelody,
+  analyzeMelodyGabc,
+  detectMode,
+  matchTone,
+  catholicGregorianToneSet,
+} from '@psalmigen/engine';
+
+export type AntiphonFormat = 'abc' | 'gabc';
 
 export interface AntiphonInputSection {
   element: HTMLElement;
-  onApply(callback: (toneSetId: string, toneId: string) => void): void;
+  onApply(callback: (toneSetId: string, toneId: string, differentiaIndex: number) => void): void;
 }
 
 function labeled(text: string, el: HTMLElement): HTMLLabelElement {
@@ -13,13 +21,79 @@ function labeled(text: string, el: HTMLElement): HTMLLabelElement {
   return wrap;
 }
 
+const PLACEHOLDER: Record<AntiphonFormat, string> = {
+  abc: 'X:1\nL:1/4\nK:C\nD F A A G F E D |]',
+  gabc: '(c3) A(g) F(i) A(k) A(k) G(j) F(i) E(h) D(g) ::',
+};
+
+const HELP_HTML: Record<AntiphonFormat, string> = {
+  abc: `
+    <strong>ABC notation</strong> -- only the pitches matter here, not the rhythm.
+    <ul>
+      <li>Start with a header: <code>X:1</code>, then <code>L:1/4</code> (note length), then a key, e.g. <code>K:C</code>.</li>
+      <li>Notes are the letters <code>C D E F G A B</code>. Uppercase is the base octave;
+        lowercase (<code>c d e f g a b</code>) is one octave higher.</li>
+      <li>A comma after a note drops it an octave (<code>C,</code>); an apostrophe raises it (<code>c'</code>).</li>
+      <li>Separate notes with spaces; use <code>|</code> between phrases and end with <code>|]</code>.</li>
+    </ul>
+    <p>Example: <code>X:1</code> / <code>L:1/4</code> / <code>K:C</code> / <code>D F A A G F E D |]</code></p>`,
+  gabc: `
+    <strong>GABC notation</strong> (the format used by Gregorio/square-note chant editors).
+    <ul>
+      <li>Start with a clef in parentheses, e.g. <code>(c3)</code> (a "do" clef on staff line 3)
+        or <code>(f3)</code> (a "fa" clef on staff line 3) -- the clef fixes which pitch letter is C or F.</li>
+      <li>Then write <code>syllable(notes)</code> pairs: pitch letters run <code>a</code> (lowest) to
+        <code>m</code> (highest), each one diatonic step apart.</li>
+      <li>Use <code>:</code> for a minor division (mediant/flex) and <code>::</code> for the final bar.</li>
+    </ul>
+    <p>Example: <code>(c3) A(g) F(i) A(k) A(k) G(j) F(i) E(h) D(g) ::</code></p>
+    <p>Only the leading clef is read; a clef change mid-score is not yet supported.</p>`,
+};
+
 export function createAntiphonInput(): AntiphonInputSection {
   const container = document.createElement('div');
   container.className = 'antiphon-input';
 
+  let format: AntiphonFormat = 'abc';
+
+  const formatFieldset = document.createElement('fieldset');
+  const formatLegend = document.createElement('legend');
+  formatLegend.textContent = 'Antiphon melody format';
+  formatFieldset.appendChild(formatLegend);
+
+  const radios: Record<AntiphonFormat, HTMLInputElement> = { abc: null!, gabc: null! };
+  (['abc', 'gabc'] as const).forEach((fmt, idx) => {
+    const radioLabel = document.createElement('label');
+    radioLabel.style.display = 'inline-block';
+    radioLabel.style.marginRight = '1.5rem';
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'antiphon-format';
+    radio.value = fmt;
+    radio.checked = idx === 0;
+    radios[fmt] = radio;
+    radioLabel.append(radio, ` ${fmt.toUpperCase()}`);
+    formatFieldset.appendChild(radioLabel);
+  });
+
+  const helpDiv = document.createElement('div');
+  helpDiv.className = 'antiphon-format-help';
+
   const textarea = document.createElement('textarea');
   textarea.rows = 4;
-  textarea.placeholder = 'X:1\nL:1/4\nK:C\nD F A A G F E D |]';
+
+  function applyFormat(fmt: AntiphonFormat): void {
+    format = fmt;
+    textarea.placeholder = PLACEHOLDER[fmt];
+    helpDiv.innerHTML = HELP_HTML[fmt];
+  }
+  applyFormat('abc');
+
+  (['abc', 'gabc'] as const).forEach((fmt) => {
+    radios[fmt].addEventListener('change', () => {
+      if (radios[fmt].checked) applyFormat(fmt);
+    });
+  });
 
   const analyzeButton = document.createElement('button');
   analyzeButton.type = 'button';
@@ -33,15 +107,17 @@ export function createAntiphonInput(): AntiphonInputSection {
   applyButton.textContent = 'Use this tone for rendering';
   applyButton.style.display = 'none';
 
-  let applyCallback: ((toneSetId: string, toneId: string) => void) | undefined;
-  let lastMatch: { toneSetId: string; toneId: string } | undefined;
+  let applyCallback:
+    ((toneSetId: string, toneId: string, differentiaIndex: number) => void) | undefined;
+  let lastMatch: { toneSetId: string; toneId: string; differentiaIndex: number } | undefined;
 
   analyzeButton.addEventListener('click', () => {
     resultDiv.textContent = '';
     applyButton.style.display = 'none';
     lastMatch = undefined;
     try {
-      const analysis = analyzeMelody(textarea.value);
+      const analysis =
+        format === 'abc' ? analyzeMelody(textarea.value) : analyzeMelodyGabc(textarea.value);
       const { mode, finalLetter } = detectMode(analysis);
       // Mode detection is a standard simplification and can misclassify
       // irregular melodies -- this suggestion is a starting point, not a
@@ -49,10 +125,14 @@ export function createAntiphonInput(): AntiphonInputSection {
       const match = matchTone(catholicGregorianToneSet, mode, analysis);
       const alternates =
         match.alternates.length > 0
-          ? ` (alternate differentiae: ${match.alternates.map((a) => `#${a.differentiaIndex + 1}`).join(', ')})`
+          ? ` (alternate endings: ${match.alternates.map((a) => a.label).join(', ')})`
           : '';
-      resultDiv.textContent = `Detected mode ${mode} (final ${finalLetter}). Suggested tone: ${match.tone.name}, differentia #${match.differentiaIndex + 1}${alternates}`;
-      lastMatch = { toneSetId: catholicGregorianToneSet.id, toneId: match.tone.id };
+      resultDiv.textContent = `Detected mode ${mode} (final ${finalLetter}). Suggested tone: ${match.tone.name}, ending ${match.differentiaLabel}${alternates}`;
+      lastMatch = {
+        toneSetId: catholicGregorianToneSet.id,
+        toneId: match.tone.id,
+        differentiaIndex: match.differentiaIndex,
+      };
       applyButton.style.display = '';
     } catch (err) {
       resultDiv.textContent = err instanceof Error ? err.message : String(err);
@@ -60,10 +140,19 @@ export function createAntiphonInput(): AntiphonInputSection {
   });
 
   applyButton.addEventListener('click', () => {
-    if (lastMatch && applyCallback) applyCallback(lastMatch.toneSetId, lastMatch.toneId);
+    if (lastMatch && applyCallback) {
+      applyCallback(lastMatch.toneSetId, lastMatch.toneId, lastMatch.differentiaIndex);
+    }
   });
 
-  container.append(labeled('Antiphon melody (ABC notation)', textarea), analyzeButton, resultDiv, applyButton);
+  container.append(
+    formatFieldset,
+    helpDiv,
+    labeled('Antiphon melody', textarea),
+    analyzeButton,
+    resultDiv,
+    applyButton,
+  );
 
   return {
     element: container,

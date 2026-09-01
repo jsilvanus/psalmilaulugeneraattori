@@ -3,6 +3,8 @@ import type { MelodyAnalysis } from './modeDetect.js';
 
 export interface DifferentiaCandidate {
   differentiaIndex: number;
+  /** The differentia's chant-book label, or "#N" (1-based) when it has none. */
+  label: string;
   /** Distance (in diatonic steps) between this differentia's final note and the antiphon's opening note. */
   distance: number;
 }
@@ -10,8 +12,14 @@ export interface DifferentiaCandidate {
 export interface ToneMatchResult {
   tone: ToneFormula;
   differentiaIndex: number;
+  /** The chosen differentia's label -- see DifferentiaCandidate.label. */
+  differentiaLabel: string;
   /** Runner-up differentiae, best first, for the UI to offer as alternatives. */
   alternates: DifferentiaCandidate[];
+}
+
+function differentiaLabel(tone: ToneFormula, differentiaIndex: number): string {
+  return tone.termination[differentiaIndex]?.label ?? `#${differentiaIndex + 1}`;
 }
 
 function terminationFinalDegree(tone: ToneFormula, differentiaIndex: number): number {
@@ -31,12 +39,17 @@ function terminationFinalDegree(tone: ToneFormula, differentiaIndex: number): nu
  * from the ToneSet itself, since a future Finnish Lutheran set may map
  * differently.
  */
-export function matchTone(toneSet: ToneSet, mode: ChurchMode, antiphon: MelodyAnalysis): ToneMatchResult {
+export function matchTone(
+  toneSet: ToneSet,
+  mode: ChurchMode,
+  antiphon: MelodyAnalysis,
+): ToneMatchResult {
   const tone = toneSet.defaultToneForMode(mode);
   const antiphonOpeningDegree = antiphon.firstPitch - antiphon.finalPitch;
 
   const candidates: DifferentiaCandidate[] = tone.termination.map((_, differentiaIndex) => ({
     differentiaIndex,
+    label: differentiaLabel(tone, differentiaIndex),
     distance: Math.abs(terminationFinalDegree(tone, differentiaIndex) - antiphonOpeningDegree),
   }));
   candidates.sort((a, b) => a.distance - b.distance);
@@ -46,5 +59,10 @@ export function matchTone(toneSet: ToneSet, mode: ChurchMode, antiphon: MelodyAn
     throw new Error(`Tone "${tone.id}" has no terminations to choose from.`);
   }
 
-  return { tone, differentiaIndex: best.differentiaIndex, alternates };
+  return {
+    tone,
+    differentiaIndex: best.differentiaIndex,
+    differentiaLabel: best.label,
+    alternates,
+  };
 }

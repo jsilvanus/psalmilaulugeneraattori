@@ -14,6 +14,7 @@ alongside). Accounts, sharing/publishing, catalogs, divine-hours assembly, and
 audio synthesis are explicitly deferred to later phases.
 
 **Decisions locked in with the user:**
+
 - Stack: Node/TypeScript, single repo, no backend/DB needed yet.
 - Languages in v1: Finnish and Latin (English deferred).
 - Verse input: text must already carry the classic psalter caesura markers —
@@ -23,9 +24,9 @@ audio synthesis are explicitly deferred to later phases.
 - Psalm text is ingested from the user's Finnish Bible, which turned out to
   be a semicolon-delimited CSV (`data/raamattu.csv`, ~5.3MB, committed to the
   repo), not XML as first assumed — one row per verse: `"book";"chapter";
-  "verse";"text"`, quoted fields with doubled-quote escaping. Psalms is book
+"verse";"text"`, quoted fields with doubled-quote escaping. Psalms is book
   19 (all 150 psalms, 2461 verses present). The importer (`text/
-  bibleImport.ts`) parses this format and extracts one psalm's verses,
+bibleImport.ts`) parses this format and extracts one psalm's verses,
   stripping an embedded Masoretic/Hebrew cross-reference some verses carry
   mid-text (e.g. `"...Absalomia. (3:2) Herra..."`, from this edition not
   counting a psalm's superscription as verse 1 while Hebrew numbering does).
@@ -33,6 +34,12 @@ audio synthesis are explicitly deferred to later phases.
   importer only produces clean raw verse text; turning that into
   `*`/`†`-marked, chantable cola is deliberately left as later work ("we'll
   need to further enhance this data later"), not attempted here.
+- `refs/jpkirja.doc` (copied from `jsilvanus/anno-api`'s own `refs/`) is the
+  Finnish Lutheran church's Kirkkokäsikirja I / Jumalanpalvelusten kirja —
+  its psalm-tone appendix is the intended source for real Gregorian,
+  Anglican, and Finnish tone-set data (see `refs/README.md`); it hasn't been
+  transcribed into engine data yet, no `.doc` converter was available in
+  this session.
 - Tone/mode data must **not** be hardcoded to one tradition. The Finnish
   Evangelical Lutheran Church uses different classic tone/mode variants than
   the Catholic (Solesmes/Gregorian) tradition — exact Lutheran tone data to
@@ -101,15 +108,20 @@ TS itself so it stays portable (browser now, a future backend later).
 ## Data model and algorithms
 
 ### Verse parsing (`text/`)
+
 ```ts
 type ColonRole = 'flex' | 'mediant' | 'termination';
-interface Colon { role: ColonRole; text: string; }
+interface Colon {
+  role: ColonRole;
+  text: string;
+}
 interface PsalmVerse {
   number?: number;
-  cola: Colon[];                  // 2 (bipartite) or 3 (tripartite) entries
-  isFirstVerseOfPsalm?: boolean;  // drives intonation in tone/fit.ts
+  cola: Colon[]; // 2 (bipartite) or 3 (tripartite) entries
+  isFirstVerseOfPsalm?: boolean; // drives intonation in tone/fit.ts
 }
 ```
+
 Normalize `+` to `†` as a first pass (plain-keyboard alias for the flex
 marker), then parse each line: if it contains `†`, split flex/mediant/
 termination on `†` then `*` (both required together); otherwise require
@@ -117,17 +129,32 @@ exactly one `*` and split into mediant/termination. Multiple `*`, or `†`
 without `*`, are parse errors surfaced with position — don't silently guess.
 
 ### Bible CSV import (`text/bibleImport.ts`)
+
 Turned out to be CSV, not XML: `data/raamattu.csv`, one row per verse,
 semicolon-delimited, every field double-quoted with doubled-quote escaping
 (`"1";"1";"3";"Ja Jumala sanoi: ""Tulkoon valkeus"". Ja valkeus tuli. "`).
 No header row. Psalms is book 19 (confirmed: all 150 psalms, 2461 verses).
+
 ```ts
-interface BibleVerseRow { book: number; chapter: number; verse: number; text: string; }
-interface RawImportedVerse { number: number; text: string; } // no * / † markup -- see below
+interface BibleVerseRow {
+  book: number;
+  chapter: number;
+  verse: number;
+  text: string;
+}
+interface RawImportedVerse {
+  number: number;
+  text: string;
+} // no * / † markup -- see below
 const PSALMS_BOOK_NUMBER = 19;
 function parseBibleCsv(csvText: string): BibleVerseRow[];
-function extractPsalm(rows: BibleVerseRow[], psalmNumber: number, bookNumber?: number): RawImportedVerse[];
+function extractPsalm(
+  rows: BibleVerseRow[],
+  psalmNumber: number,
+  bookNumber?: number,
+): RawImportedVerse[];
 ```
+
 `extractPsalm` filters by book+chapter, sorts by verse, and strips an
 embedded Masoretic/Hebrew verse-number cross-reference some verses carry
 mid-text (e.g. Psalm 3:1 ends its superscription with `"...Absalomia. (3:2)
@@ -141,12 +168,21 @@ that future step leak into `verseParser.ts`, which stays a pure
 marker-based parser.
 
 ### Phonology (`phonology/`)
+
 ```ts
-interface Syllable { text: string; hasStress: boolean; isPrimary: boolean; }
-interface Word { original: string; syllables: Syllable[]; }
+interface Syllable {
+  text: string;
+  hasStress: boolean;
+  isPrimary: boolean;
+}
+interface Word {
+  original: string;
+  syllables: Syllable[];
+}
 type Lang = 'fi' | 'la';
 function analyzeWord(word: string, lang: Lang): Word;
 ```
+
 - **Finnish**: syllabify via vowel/consonant clustering (single intervening
   consonant starts the next syllable; clusters split one-consonant-stays,
   rest-moves-on), split adjacent vowels into separate syllables unless they
@@ -169,24 +205,29 @@ function analyzeWord(word: string, lang: Lang): Word;
   v1.
 
 ### Tone formula model (`tone/`)
+
 Single generic schema covers both classic Gregorian tones and arbitrary
 formulaic tones — the fitting algorithm is written once:
+
 ```ts
 type ScaleDegree = number; // diatonic step relative to the tone's final
 
-interface CadenceNote { degree: ScaleDegree; }
+interface CadenceNote {
+  degree: ScaleDegree;
+}
 interface CadenceFormula {
-  preparatory: CadenceNote[];  // notes just before the accent, closest-last
-  accentNote: CadenceNote;     // note on the colon's last stressed syllable
-  postAccent: CadenceNote[];   // notes for trailing unstressed syllables
+  preparatory: CadenceNote[]; // notes just before the accent, closest-last
+  accentNote: CadenceNote; // note on the colon's last stressed syllable
+  postAccent: CadenceNote[]; // notes for trailing unstressed syllables
 }
 interface ToneFormula {
-  id: string; name: string;
-  final: ScaleDegree;          // 0 by construction
-  reciting: ScaleDegree;       // tenor/reciting note
-  hasBFlat?: boolean;          // tones 5/6-style signature, for GABC/ABC emission
-  intonation?: CadenceNote[];  // only colon 1 of verse 1
-  flex?: CadenceFormula;       // tripartite verses only
+  id: string;
+  name: string;
+  final: ScaleDegree; // 0 by construction
+  reciting: ScaleDegree; // tenor/reciting note
+  hasBFlat?: boolean; // tones 5/6-style signature, for GABC/ABC emission
+  intonation?: CadenceNote[]; // only colon 1 of verse 1
+  flex?: CadenceFormula; // tripartite verses only
   mediant: CadenceFormula;
   termination: CadenceFormula[]; // one or more differentiae, index 0 = default
 }
@@ -196,14 +237,25 @@ interface ToneFormula {
 // a specific ToneSet's contents or the standard 8-tone/4-final Gregorian
 // layout; they only consume ToneFormula values, whichever set they came from.
 interface ToneSet {
-  id: string;               // 'catholic-gregorian', 'finnish-lutheran', ...
+  id: string; // 'catholic-gregorian', 'finnish-lutheran', ...
   name: string;
   tones: ToneFormula[];
-  defaultToneForMode: (mode: 1|2|3|4|5|6|7|8) => ToneFormula; // mapping is per-ToneSet, not global
+  defaultToneForMode: (mode: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) => ToneFormula; // mapping is per-ToneSet, not global
 }
 ```
-`toneSets/catholicGregorian.ts` ships tones 1–8 + tonus peregrinus with a
-default mediant and at least one termination each, as one `ToneSet` value.
+
+Terminations are always a labeled collection (`Differentia[]`, each optionally
+carrying a chant-book `label` like `"a"`/`"b"`/`"D"`), never a single fixed
+cadence — both the Catholic/Gregorian and Finnish Lutheran traditions give a
+tone several named endings, and the choir picks whichever hands off smoothly
+into the antiphon that follows (`antiphon/toneMatch.ts`); `fit.ts::fitVerse`
+takes a `differentiaIndex` (default 0) to select which one to render, wired
+end-to-end from the web UI's tone selector and from an applied antiphon
+match. `toneSets/catholicGregorian.ts` ships tones 1–8 + tonus peregrinus
+with a default mediant and **three** structurally-distinct, labeled
+termination differentiae each, as one `ToneSet` value — modeling the
+multiplicity, but (per its own DATA ACCURACY NOTE) not yet the historically
+exact Solesmes figures for each named ending.
 **Cross-check the actual scale-degree numbers against an authoritative table
 (e.g. Liber Usualis / a standard Solesmes psalm-tone chart) while
 implementing — do not hand-wave remembered numbers into shipped data.** A
@@ -217,6 +269,7 @@ differently than the Catholic table does.
 
 **Fitting algorithm** (`fit.ts`), given a colon's syllabified words and a
 `CadenceFormula` + `reciting` degree:
+
 1. Find the last stressed syllable of the colon (its final word's main
    accent) — this is the anchor.
 2. Trailing syllables after the anchor get `postAccent` notes 1:1. If the
@@ -237,6 +290,7 @@ differently than the Catholic table does.
    syllables in place of the reciting note.
 
 ### Output (`output/`)
+
 - **GABC**: build a degree→GABC-pitch-letter table once per (tone final,
   clef) by walking GABC's diatonic letter sequence from the final; apply a
   post-pass substituting the flatted pitch letter for `hasBFlat` tones.
@@ -250,14 +304,22 @@ differently than the Catholic table does.
   locked-in decision above) rather than as `w:` lyric underlay.
 
 ### Antiphon input, mode detection, tone matching (`antiphon/`)
+
 User pastes the antiphon as ABC text (reuse `abcjs.parseOnly()`'s tune object
 rather than writing a second ABC parser). From the note events, compute final
 pitch, ambitus (low/high), and most-frequent pitch (reciting-tone proxy):
+
 ```ts
-interface MelodyAnalysis { finalPitch: number; ambitusLow: number; ambitusHigh: number; mostFrequentPitch: number; }
+interface MelodyAnalysis {
+  finalPitch: number;
+  ambitusLow: number;
+  ambitusHigh: number;
+  mostFrequentPitch: number;
+}
 function analyzeMelody(tuneObj): MelodyAnalysis;
-function detectMode(a: MelodyAnalysis): { mode: 1|2|3|4|5|6|7|8 };
+function detectMode(a: MelodyAnalysis): { mode: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 };
 ```
+
 Mode detection: map the final to one of the four finals (D/E/F/G); classify
 authentic vs. plagal by whether the range sits mostly above the final
 (authentic) or centers roughly a fourth below it with reciting tone a third
@@ -267,7 +329,7 @@ uses finer criteria) — good enough for v1, but the UI must let the user
 override the detected mode manually, since irregular melodies can misclassify.
 
 Tone matching: call the active `ToneSet.defaultToneForMode(mode)` (for the
-Catholic/Gregorian set this defaults mode *N* to `Tonus N`, with tonus
+Catholic/Gregorian set this defaults mode _N_ to `Tonus N`, with tonus
 peregrinus offered as a manual alternative for mode 7/8 antiphons rather than
 auto-selected) — never hardcode the mode→tone pairing outside the `ToneSet`,
 since a Finnish Lutheran set may map differently.
@@ -278,8 +340,10 @@ smooth hand-off back into the antiphon. Show runner-up terminations in the UI
 as alternatives.
 
 ## Web UI (`packages/web`)
+
 Vanilla TS + Vite, no framework (not enough surface area here to justify
 one). Four sections wired directly to the engine:
+
 - **VerseInput** — textarea for `*`/`†`-marked text + language selector,
   surfaces parser errors inline. Also includes an "Import from Bible" flow:
   a reference input (`"3:1-4,6-8"`, `"3:5"`, or just `"3"` for the whole
@@ -309,7 +373,7 @@ one). Four sections wired directly to the engine:
 3. `phonology/finnish.ts` and `phonology/latin.ts` + tests (independent of
    each other and of tone logic; testable against plain word lists).
 4. `tone/types.ts`, `tone/toneSets/registry.ts`, `tone/toneSets/
-   catholicGregorian.ts` (verify against a reference table), `tone/fit.ts`
+catholicGregorian.ts` (verify against a reference table), `tone/fit.ts`
    (written against `ToneFormula`/`ToneSet` only, never against the
    Catholic/Gregorian data specifically) + tests covering short-colon edge
    cases explicitly.

@@ -28,7 +28,11 @@ interface FlatSyllable {
 
 function flattenWords(words: Word[]): FlatSyllable[] {
   return words.flatMap((word) =>
-    word.syllables.map((s, idx) => ({ text: s.text, hasStress: s.hasStress, isWordStart: idx === 0 })),
+    word.syllables.map((s, idx) => ({
+      text: s.text,
+      hasStress: s.hasStress,
+      isWordStart: idx === 0,
+    })),
   );
 }
 
@@ -88,7 +92,10 @@ export function fitColon(
     // 1:1, then repeat the last expected degree for the extras. If the
     // formula expects no postAccent notes at all (e.g. a flex, which has
     // none), the extras simply stay on the accent's own pitch.
-    const fallbackDegree = expectedPost.length > 0 ? expectedPost[expectedPost.length - 1]!.degree : formula.accentNote.degree;
+    const fallbackDegree =
+      expectedPost.length > 0
+        ? expectedPost[expectedPost.length - 1]!.degree
+        : formula.accentNote.degree;
     trailing.forEach((_, i) => {
       const degree = i < expectedPost.length ? expectedPost[i]!.degree : fallbackDegree;
       result[anchor + 1 + i]!.notes.push(degree);
@@ -135,7 +142,11 @@ export function fitColon(
   return result;
 }
 
-function selectFormula(tone: ToneFormula, role: ColonRole): CadenceFormula {
+function selectFormula(
+  tone: ToneFormula,
+  role: ColonRole,
+  differentiaIndex: number,
+): CadenceFormula {
   if (role === 'flex') {
     if (!tone.flex) {
       throw new Error(`Tone "${tone.id}" has no flex formula defined for a tripartite verse.`);
@@ -143,11 +154,11 @@ function selectFormula(tone: ToneFormula, role: ColonRole): CadenceFormula {
     return tone.flex;
   }
   if (role === 'mediant') return tone.mediant;
-  const [defaultTermination] = tone.termination;
-  if (!defaultTermination) {
-    throw new Error(`Tone "${tone.id}" has no termination formula.`);
+  const differentia = tone.termination[differentiaIndex];
+  if (!differentia) {
+    throw new Error(`Tone "${tone.id}" has no differentia at index ${differentiaIndex}.`);
   }
-  return defaultTermination;
+  return differentia;
 }
 
 function selectReciting(tone: ToneFormula, role: ColonRole): ScaleDegree {
@@ -155,10 +166,19 @@ function selectReciting(tone: ToneFormula, role: ColonRole): ScaleDegree {
   return tone.reciting;
 }
 
-/** Fits every colon of a verse (2 or 3 cola) onto the given tone. */
-export function fitVerse(cola: ColonInput[], tone: ToneFormula, isFirstVerseOfPsalm: boolean): PitchedColon[] {
+/**
+ * Fits every colon of a verse (2 or 3 cola) onto the given tone.
+ * `differentiaIndex` picks which of the tone's termination endings
+ * (differentiae) to use -- defaults to 0, the tone's default ending.
+ */
+export function fitVerse(
+  cola: ColonInput[],
+  tone: ToneFormula,
+  isFirstVerseOfPsalm: boolean,
+  differentiaIndex = 0,
+): PitchedColon[] {
   return cola.map((colon, index) => {
-    const formula = selectFormula(tone, colon.role);
+    const formula = selectFormula(tone, colon.role, differentiaIndex);
     const recitingDegree = selectReciting(tone, colon.role);
     const syllables = fitColon(colon.words, formula, recitingDegree, tone.intonation, {
       isFirstColonOfFirstVerse: isFirstVerseOfPsalm && index === 0,
