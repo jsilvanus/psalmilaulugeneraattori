@@ -207,6 +207,22 @@ const tones: ToneFormula[] = [
       }),
     ],
   }),
+  buildTone({
+    id: 'tonus-8',
+    name: 'VIII sävelmä (hypomiksolyydinen)',
+    reciting: 3, // C
+    intonation: [0, 1], // g a
+    flex: cadence([], 3, [1, 1]), // C c/ a a
+    mediant: cadence([], 4, [3, 3]), // C d/ (c) c
+    termination: [
+      differentia('1', [2, 3], 1, [0, 0]), // C h c a/ (g) g
+      differentia('2', [2, 3], 1, [0, 0, 1]), // C h c a/ (g) ga
+      differentia('3', [1, 3], 4, [3, 3]), // C a c d/ (c) c
+      differentia('4', [1, 3], 2, [1, 1]), // C a c h/ (a) a
+      differentia('5', [1, 2], 0, [1, 1]), // C a h g/ (a) a
+      differentia('6', [1, 2, 0], 0, [1, 1]), // C a h [(g) ga]/ a
+    ],
+  }),
 ];
 
 export const finnishGregorianToneSet: ToneSet = {
