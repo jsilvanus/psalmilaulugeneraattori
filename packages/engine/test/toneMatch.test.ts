@@ -23,14 +23,17 @@ describe('matchTone', () => {
       analysis({ firstPitch: 4, finalPitch: 0 }),
     );
     expect(result.tone.id).toBe('tonus-1');
-    // catholicGregorian ships 3 labeled differentiae ('a'/'b'/'c') per tone.
-    expect(result.differentiaLabel).toMatch(/^[abc]$/);
-    expect(result.alternates).toHaveLength(2);
-    expect(new Set([result.differentiaLabel, ...result.alternates.map((a) => a.label)])).toEqual(
-      new Set(['a', 'b', 'c']),
-    );
+    // Tonus I ships its real 9 Liber Usualis differentiae (D/D2/f/g/g2/g3/a/a2/a3).
+    // An antiphon opening a 5th above its own final (relative degree 4) is
+    // an exact match for the 'a'/'a2'/'a3' endings (which land on degree 4).
+    expect(result.differentiaLabel).toBe('a');
+    expect(result.alternates).toHaveLength(8);
     // Alternates are sorted best (smallest distance) first.
-    expect(result.alternates[0]!.distance).toBeLessThanOrEqual(result.alternates[1]!.distance);
+    for (let i = 1; i < result.alternates.length; i++) {
+      expect(result.alternates[i]!.distance).toBeGreaterThanOrEqual(
+        result.alternates[i - 1]!.distance,
+      );
+    }
   });
 
   it('never hardcodes the mode->tone pairing, deferring to the ToneSet', () => {

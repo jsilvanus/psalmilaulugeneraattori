@@ -7,7 +7,11 @@ import { catholicGregorianToneSet } from '../src/tone/toneSets/catholicGregorian
 function word(syllables: { text: string; hasStress: boolean }[]): Word {
   return {
     original: syllables.map((s) => s.text).join(''),
-    syllables: syllables.map((s) => ({ text: s.text, hasStress: s.hasStress, isPrimary: s.hasStress })),
+    syllables: syllables.map((s) => ({
+      text: s.text,
+      hasStress: s.hasStress,
+      isPrimary: s.hasStress,
+    })),
   };
 }
 
@@ -190,9 +194,12 @@ describe('fitVerse', () => {
       false,
     );
 
-    // Mediant: reciting = 4 (A) throughout the prep/reciting portion.
-    expect(mediant!.syllables.slice(0, 4).map((s) => s.notes)).toEqual([[4], [4], [4], [4]]);
-    // Termination: reciting = secondReciting = 3 (G), not tone.reciting.
-    expect(termination!.syllables.slice(0, 4).map((s) => s.notes)).toEqual([[3], [3], [3], [3]]);
+    // Mediant: its real Liber Usualis preparatory shape is 4 notes long
+    // ([3, 5, 5, 4], the tone's decorative approach to the cadence), which
+    // exactly fills the 4 syllables before this colon's accent.
+    expect(mediant!.syllables.slice(0, 4).map((s) => s.notes)).toEqual([[3], [5], [5], [4]]);
+    // Termination: reciting = secondReciting = 3 (G), not tone.reciting,
+    // for the syllables before its (1-note) preparatory shape.
+    expect(termination!.syllables.slice(0, 4).map((s) => s.notes)).toEqual([[3], [3], [3], [0]]);
   });
 });
