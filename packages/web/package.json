@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@psalmigen/engine": "*",
+    "@psalmigen/engine": "workspace:*",
     "abcjs": "^6.7.0"
   },
   "devDependencies": {

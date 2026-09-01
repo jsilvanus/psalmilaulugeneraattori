@@ -48,7 +48,7 @@ audio synthesis are explicitly deferred to later phases.
 
 ## Repo / module structure
 
-npm workspaces, two packages:
+pnpm workspaces, two packages:
 
 ```
 psalmilaulugeneraattori/
@@ -352,7 +352,7 @@ speculatively designing it now.
   module above ships with unit tests, and steps 4–5 use golden-file
   fixtures (verse + tone → exact expected GABC/ABC string) so regressions
   are caught mechanically.
-- After step 6: run `npm run dev` in `packages/web`, paste a real Finnish or
+- After step 6: run `pnpm dev` in `packages/web`, paste a real Finnish or
   Latin psalm verse (with `*`/optional `†`), pick a built-in tone, and
   confirm abcjs renders a plausible chant line and the GABC text looks
   sane — check this in an actual browser, not just via tests.

@@ -2,12 +2,11 @@
   "name": "psalmilaulugeneraattori",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "packages/*"
-  ],
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "dev": "pnpm --filter @psalmigen/web dev",
+    "build": "pnpm -r --if-present run build",
+    "test": "pnpm -r --if-present run test",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
