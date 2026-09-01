@@ -17,6 +17,7 @@ describe('finnishGregorianToneSet', () => {
       'tonus-7',
       'tonus-8',
       'tonus-peregrinus',
+      'tonus-irregularis',
     ]);
   });
 

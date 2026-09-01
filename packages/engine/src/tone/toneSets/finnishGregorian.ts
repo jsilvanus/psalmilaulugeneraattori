@@ -233,6 +233,23 @@ const tones: ToneFormula[] = [
     mediant: cadence([3, 5, 4], 3, [2, 2]), // A g b a g/ (f) f
     termination: [differentia('1', [0], 2, [2, 1, 0])], // G d f/ f ed
   }),
+  buildTone({
+    id: 'tonus-irregularis',
+    name: 'Tonus irregularis',
+    // No intonation given (not explicitly confirmed absent, unlike tonus-7
+    // -- flagging in case one was just missed).
+    reciting: 4, // A
+    flex: cadence([], 4, [3, 3]), // A a/ g g
+    mediant: cadence([], 3, [2, 2]), // A g/ (f) f
+    termination: [
+      // A b/ (g) g b/ (a) a
+      differentia('1', [], 5, [4, 4], {
+        preparatory: [],
+        accentNote: { degree: 5 }, // b/ (first)
+        postAccent: [{ degree: 3 }, { degree: 3 }], // (g) g
+      }),
+    ],
+  }),
 ];
 
 export const finnishGregorianToneSet: ToneSet = {
