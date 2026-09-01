@@ -14,6 +14,7 @@ describe('finnishGregorianToneSet', () => {
       'tonus-4',
       'tonus-5',
       'tonus-6',
+      'tonus-7',
     ]);
   });
 

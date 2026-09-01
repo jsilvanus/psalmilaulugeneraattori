@@ -155,6 +155,58 @@ const tones: ToneFormula[] = [
       differentia('1', [0, 1, 2], 1, [0, 0]), // A f ga g/ (f) f
     ],
   }),
+  buildTone({
+    id: 'tonus-7',
+    name: 'VII sävelmä (miksolyydinen)',
+    // No intonation for this tone (confirmed) -- omitted, not defaulted.
+    reciting: 4, // D
+    flex: cadence([], 4, [3, 3]), // D d/ (c) c
+    mediant: cadence([], 4, [6, 6], {
+      preparatory: [],
+      accentNote: { degree: 6 }, // f/
+      postAccent: [{ degree: 5 }, { degree: 5 }], // (e) e
+    }),
+    termination: [
+      // D e/ (d) d c/ (c) ha
+      differentia('1', [], 3, [3, 2, 1], {
+        preparatory: [],
+        accentNote: { degree: 5 }, // e/
+        postAccent: [{ degree: 4 }, { degree: 4 }], // (d) d
+      }),
+      // D e/ (d) d c/ (c) hc
+      differentia('2', [], 3, [3, 2, 3], {
+        preparatory: [],
+        accentNote: { degree: 5 },
+        postAccent: [{ degree: 4 }, { degree: 4 }],
+      }),
+      // D e/ (d) d c/ (c) dc
+      differentia('3', [], 3, [3, 4, 3], {
+        preparatory: [],
+        accentNote: { degree: 5 },
+        postAccent: [{ degree: 4 }, { degree: 4 }],
+      }),
+      // D e/ (e) c d/ (d) d -- lone "(e)" read as an echo of the secondary
+      // accent's own pitch (as confirmed by "5"/"6" below), leaving "c" as
+      // the primary's preparatory note.
+      differentia('4', [3], 4, [4, 4], {
+        preparatory: [],
+        accentNote: { degree: 5 }, // e/
+        postAccent: [{ degree: 5 }], // (e)
+      }),
+      // D c/ (c) a c/ (d) d
+      differentia('5', [1], 3, [4, 4], {
+        preparatory: [],
+        accentNote: { degree: 3 }, // c/ (first)
+        postAccent: [{ degree: 3 }], // (c)
+      }),
+      // D c/ (c) a [(c) cd]/ d
+      differentia('6', [1, 3], 3, [4, 4], {
+        preparatory: [],
+        accentNote: { degree: 3 },
+        postAccent: [{ degree: 3 }],
+      }),
+    ],
+  }),
 ];
 
 export const finnishGregorianToneSet: ToneSet = {
