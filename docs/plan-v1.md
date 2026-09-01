@@ -36,10 +36,14 @@ bibleImport.ts`) parses this format and extracts one psalm's verses,
   need to further enhance this data later"), not attempted here.
 - `refs/jpkirja.doc` (copied from `jsilvanus/anno-api`'s own `refs/`) is the
   Finnish Lutheran church's Kirkkokäsikirja I / Jumalanpalvelusten kirja —
-  its psalm-tone appendix is the intended source for real Gregorian,
-  Anglican, and Finnish tone-set data (see `refs/README.md`); it hasn't been
-  transcribed into engine data yet, no `.doc` converter was available in
-  this session.
+  its psalm-tone appendix is the intended source for the Finnish-specific
+  Gregorian, Anglican, and Finnish tone-set data (see `refs/README.md`);
+  extracting it needs the Capella font its notation is set in (found and
+  installable) and decoding embedded WMF images, and hasn't been fully
+  transcribed into engine data yet.
+- `refs/liber-usualis-psalm-tones.pdf` (supplied by the user) is the
+  authoritative Catholic/Solesmes source, and **is** fully transcribed into
+  `catholicGregorian.ts` — see that file's DATA SOURCE comment.
 - Tone/mode data must **not** be hardcoded to one tradition. The Finnish
   Evangelical Lutheran Church uses different classic tone/mode variants than
   the Catholic (Solesmes/Gregorian) tradition — exact Lutheran tone data to
@@ -251,11 +255,13 @@ tone several named endings, and the choir picks whichever hands off smoothly
 into the antiphon that follows (`antiphon/toneMatch.ts`); `fit.ts::fitVerse`
 takes a `differentiaIndex` (default 0) to select which one to render, wired
 end-to-end from the web UI's tone selector and from an applied antiphon
-match. `toneSets/catholicGregorian.ts` ships tones 1–8 + tonus peregrinus
-with a default mediant and **three** structurally-distinct, labeled
-termination differentiae each, as one `ToneSet` value — modeling the
-multiplicity, but (per its own DATA ACCURACY NOTE) not yet the historically
-exact Solesmes figures for each named ending.
+match. `toneSets/catholicGregorian.ts` ships tones 1–8 + tonus peregrinus with a
+mediant and their real, labeled Liber Usualis termination differentiae each
+(9 for Tonus I down to 1 for tones II/V/VI, matching the historical
+differentia counts) — transcribed from `refs/liber-usualis-psalm-tones.pdf`
+(via `bbloomf/jgabc`'s GABC data, cross-checked against that PDF; see the
+file's own DATA SOURCE comment for the conversion method). `intonation` and
+`flex` are not yet sourced the same way and remain a structural placeholder.
 **Cross-check the actual scale-degree numbers against an authoritative table
 (e.g. Liber Usualis / a standard Solesmes psalm-tone chart) while
 implementing — do not hand-wave remembered numbers into shipped data.** A
@@ -424,10 +430,11 @@ speculatively designing it now.
   known modes from a real chant book) and confirm the detected mode and
   suggested tone/differentia match; confirm manual override works when it
   doesn't.
-- Before trusting `toneSets/catholicGregorian.ts` data, cross-check the
-  shipped scale-degree numbers against an authoritative psalm-tone table
-  (flagged above as a real risk — remembered numbers should not go
-  unverified into shipped data).
+- Done: `toneSets/catholicGregorian.ts`'s mediant/termination scale-degree
+  numbers are transcribed from `refs/liber-usualis-psalm-tones.pdf` (via
+  `bbloomf/jgabc`'s Liber-Usualis-sourced GABC data) rather than recalled
+  from memory — see the file's DATA SOURCE comment. `intonation`/`flex`
+  are not yet sourced the same way and remain a flagged placeholder.
 - Done: the Bible source turned out to be CSV, not XML. Confirmed structure
   (book;chapter;verse;text, Psalms = book 19, 150 psalms/2461 verses, no
   caesura markup, and the mid-verse Masoretic cross-reference quirk) and
