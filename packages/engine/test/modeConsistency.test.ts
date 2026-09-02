@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checkModeConsistency } from '../src/antiphon/modeConsistency.js';
+import { checkModeConsistency, detectModeFromAbc } from '../src/antiphon/modeConsistency.js';
+import { analyzeMelody, detectMode } from '../src/antiphon/modeDetect.js';
 
 describe('checkModeConsistency', () => {
   it('confirms a clean D-final melody using only naturals as Dorian, with churchMode 1', () => {
@@ -91,5 +92,57 @@ describe('checkModeConsistency', () => {
 
   it('throws for an empty melody', () => {
     expect(() => checkModeConsistency('X:1\nL:1/4\nK:C\n')).toThrow();
+  });
+});
+
+describe('detectModeFromAbc', () => {
+  it('names the mode when the content actually supports it', () => {
+    const result = detectModeFromAbc('X:1\nL:1/4\nK:C\nD E F G A B A G F E D |]');
+    expect(result.mode).toBe(1);
+    expect(result.root).toEqual({ letter: 'D' });
+    expect(result.matches.map((m) => m.species)).toEqual(['Dorian']);
+  });
+
+  it('declines to name a mode for a transposed final this engine has no tone data for', () => {
+    // G-Dorian (Bb key signature). detectMode, which only sees the bare
+    // final letter, confidently calls this mode 7 (G being Mixolydian's
+    // canonical final) -- it cannot see the flat at all. This is the whole
+    // point of the content-aware path, so assert the contrast directly.
+    const abc = 'X:1\nL:1/4\nK:Gdor\nG A B c d e d c B A G |]';
+    expect(detectMode(analyzeMelody(abc)).mode).toBe(7);
+
+    const result = detectModeFromAbc(abc);
+    expect(result.mode).toBeUndefined();
+    expect(result.matches.map((m) => m.species)).toEqual(['Dorian']);
+    expect(result.root).toEqual({ letter: 'G' });
+  });
+
+  it('never reports more than one canonical churchMode among its matches', () => {
+    // The web UI splits matches into "the one that was named" and "the ones
+    // the melody can't rule out" (AntiphonInput.ts), which is only coherent
+    // because CANONICAL_PAIR holds exactly one species per root letter.
+    // Locking that here so the split can't silently start dropping a second
+    // named mode if that table ever grows.
+    const melodies = [
+      'X:1\nL:1/4\nK:C\nD E F G A B A G F E D |]',
+      'X:1\nL:1/4\nK:C\nD F A A A G F E D |]',
+      'X:1\nL:1/4\nK:C\nC D E D C |]',
+      'X:1\nL:1/4\nK:C\nA, C D F F F E D |]',
+      'X:1\nL:1/4\nK:C\nF G A B c B _B A G F |]',
+      'X:1\nL:1/4\nK:Gdor\nG A B c d e d c B A G |]',
+      'X:1\nL:1/4\nK:C\nE F G A B A G F E |]',
+    ];
+    for (const abc of melodies) {
+      const named = detectModeFromAbc(abc).matches.filter((m) => m.churchMode !== undefined);
+      expect(named.length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('declines to name a mode, and reports the final, when the content fits no species at all', () => {
+    const result = detectModeFromAbc('X:1\nL:1/4\nK:C\nC D E ^F _B C |]');
+    expect(result.mode).toBeUndefined();
+    expect(result.matches).toEqual([]);
+    // Still reports WHICH final the content failed to cohere at.
+    expect(result.root).toEqual({ letter: 'C' });
   });
 });

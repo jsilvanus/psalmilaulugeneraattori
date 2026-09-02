@@ -116,6 +116,21 @@ const CUSTOMARY_FLEXIBLE_LETTER: Partial<Record<string, string>> = {
  * GABC melody can't carry the accidental information this check needs.
  */
 export function checkModeConsistency(abcText: string): ModeConsistencyMatch[] {
+  return analyzeConsistency(abcText).matches;
+}
+
+interface ConsistencyAnalysis {
+  root: ModeRoot;
+  matches: ModeConsistencyMatch[];
+}
+
+/**
+ * Shared implementation behind checkModeConsistency and detectModeFromAbc:
+ * the root is needed by the latter even when nothing matches (so it can say
+ * WHICH final the content failed to cohere at), but the former's array
+ * return has nowhere to put it.
+ */
+function analyzeConsistency(abcText: string): ConsistencyAnalysis {
   const events = Array.from(walkAbcNotes(abcText));
   if (events.length === 0) {
     throw new Error('The melody has no notes to analyze.');
@@ -161,5 +176,49 @@ export function checkModeConsistency(abcText: string): ModeConsistencyMatch[] {
         : undefined;
     matches.push({ species, root, churchMode });
   }
-  return matches;
+  return { root, matches };
+}
+
+export interface AbcModeDetection {
+  /**
+   * The canonical ChurchMode the melody's actual content supports, if any.
+   * Undefined in two quite different situations, both of which are correct
+   * answers rather than failures to detect: the content coheres at a final
+   * this engine has no tone data for (e.g. G-Dorian), or it coheres as no
+   * diatonic species at all. `matches` tells the two apart.
+   *
+   * At most one match can ever carry a churchMode, so this isn't an
+   * arbitrary pick among several: CANONICAL_PAIR holds exactly one species
+   * per root letter (D-Dorian, E-Phrygian, ...), so no two matching species
+   * at the same root can both be canonical.
+   */
+  mode?: ChurchMode;
+  /** Every species the content is consistent with -- see checkModeConsistency. */
+  matches: ModeConsistencyMatch[];
+  /** The melody's own final, reported even when nothing matched. */
+  root: ModeRoot;
+}
+
+/**
+ * Content-aware counterpart of modeDetect.ts's `detectMode`, for the
+ * antiphon -> tone pipeline.
+ *
+ * `detectMode` reads the final note's bare letter and always names a mode --
+ * it cannot see accidentals at all (abcjs's own diatonic `pitch` field is
+ * accidental- and key-signature-blind; see walkAbcNotes). That makes it
+ * confidently wrong on transposed chant: a G-final melody carrying a B-flat
+ * is Dorian transposed, but `detectMode` reports mode 7/8 (Mixolydian),
+ * because G is Mixolydian's canonical final and the flat is invisible to it.
+ *
+ * This asks what the notes actually support, and declines to name a mode
+ * when they don't support one. Prefer it over `detectMode` wherever the raw
+ * ABC text is available; `detectMode` remains correct for accidental-free
+ * input and is still the primitive that resolves authentic vs. plagal.
+ *
+ * ABC only, for the same reason checkModeConsistency is -- GABC accidentals
+ * aren't read anywhere in this engine yet (see output/gabc.ts's note).
+ */
+export function detectModeFromAbc(abcText: string): AbcModeDetection {
+  const { root, matches } = analyzeConsistency(abcText);
+  return { mode: matches.find((m) => m.churchMode !== undefined)?.churchMode, matches, root };
 }
