@@ -91,7 +91,7 @@ tones 8/9 SATB variants), but **no `anglicanChant.ts` tone set exists yet**
 — an attempt to extract the 5 formulas' actual pitches programmatically
 (since the project owner was unavailable to dictate them, unlike every
 other tone set here) did not reach a confidence level worth committing as
-real data. What *is* confirmed, worth preserving so the next attempt (by
+real data. What _is_ confirmed, worth preserving so the next attempt (by
 either better tooling or dictation) doesn't have to redo it:
 
 - **Single vs. double chant**: formulas 1-4 are single chants (one
@@ -99,28 +99,47 @@ either better tooling or dictation) doesn't have to redo it:
   verse). Formula 5 is a **double chant** (two systems/strains, used
   alternately across two consecutive verses) — confirmed by cross-checking
   against "esimerkki 1" (uses formula 5's first strain alone, i.e. formula
-  5 used as a single chant for one verse) and "esimerkki 2" (uses *both*
+  5 used as a single chant for one verse) and "esimerkki 2" (uses _both_
   of formula 5's strains, one per verse, with real underlaid text). A
   double chant doesn't fit the engine's existing bipartite (mediant +
   termination) `ColonRole` shape as one `ChordToneFormula` — model it as
   two linked strains (two `ChordToneFormula`s, alternated by the
   verse-fitting caller) rather than extending `ColonRole`.
-- **Pointing convention**, confirmed both from the book's own prose (p.
-  387: "the barline corresponds to the Gregorian tone's accent mark; the
-  colon's last accented syllable goes on the ending whole note, followed
-  by up to two unaccented syllables") and empirically from "esimerkki
-  1"'s real text underlay (`Palvelkaa hän-tä iloiten, tulkaa hä-nen
-  eteen-sä riemuiten.`): each half (mediant/termination) is **[reciting
-  whole-note chord, absorbing every leading unstressed syllable] + [N
-  preparatory half-note chords] + [1 final whole-note chord = the last
-  stressed syllable, which also absorbs up to 2 more trailing unstressed
-  syllables on that same held chord]**. This maps directly onto the
-  existing `ChordCadenceFormula` shape (`preparatory` + `accentNote` +
-  `postAccent: [accentNote]`, relying on `fitChord.ts`'s existing overflow
-  handling for the "up to 2 more syllables" part) — no engine changes
-  needed once real chord data exists. For formula 5 specifically: N=2 for
-  the mediant, N=4 for the termination (read off "esimerkki 1"'s
-  syllable-to-chord alignment).
+- **Pointing convention**, confirmed both from the book's own prose (p. 387) and empirically from "esimerkki 1"'s real text underlay
+  (`Palvelkaa hän-tä iloiten, tulkaa hä-nen eteen-sä riemuiten.`): each
+  half (mediant/termination) is **[reciting chord, absorbing every leading
+  unstressed syllable] + [N preparatory chords, from any preceding
+  half-note pairs] + [a final cadence chord (or two) carrying the colon's
+  last stressed syllable, plus up to two more trailing unstressed
+  syllables]**. The final cadence is written EITHER as a single whole note
+  (then all of the accent + trailing syllables share that one chord --
+  formula 5/esimerkki 1's `iloiten,` and `riemuiten.`) OR as a pair of half
+  notes (then the accent lands on the first of the pair and the last
+  trailing syllable on the second -- formulas 1-4's mediants, e.g. formula
+  1's, end this way with no separate final whole note at all: read the
+  whole cadence there as `preparatory: []`, `accentNote` = the first half
+  note, `postAccent: [the second half note]`, not as two more preparatory
+  notes).
+  **The exact overflow rule for the "up to two trailing syllables" case is
+  the one real correction this needed**, quoted almost verbatim from the
+  book (p. 387): _"If three syllables (one accented and two unaccented)
+  fall onto a bar marked with half notes, the first syllables are sung on
+  the first half note, and the last syllable on the second half note."_
+  I.e. when a cadence has fewer defined `postAccent` chords than there are
+  actual trailing syllables, the **excess syllables extend the accent's
+  own chord**, while the chords that _are_ written stay anchored to the
+  true end of the colon -- not (as `fitChord.ts` originally, incorrectly,
+  did by mirroring `fit.ts`'s Gregorian behaviour) repeating the
+  last-defined `postAccent` chord for the excess. This is now fixed in
+  `fitChord.ts`'s `applyChordAccent` (see its excess branch and the
+  matching test in `fitChord.test.ts`) -- deliberately _not_ changed in
+  `fit.ts`, since the book's own Gregorian-section prose doesn't describe
+  this rule and `fit.ts`'s "repeat the last postAccent degree" behaviour
+  is already established, tested, and used by all the committed Gregorian
+  data. For formula 5 specifically: N=2 preparatory chords for the
+  mediant, N=4 for the termination (read off "esimerkki 1"'s
+  syllable-to-chord alignment), each ending in a genuine separate final
+  whole note.
 - **One spot-confirmed data point** (formula 5 / esimerkki 1's very first
   chord, the mediant's reciting chord): soprano B4, alto G4 (both sit
   exactly on staff lines — treble clef, key signature one sharp/G major),

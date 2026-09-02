@@ -73,12 +73,19 @@ function applyChordAccent(
       result[anchor + 1 + i]!.chords.push(expectedPost[deficit + i]!.chord);
     });
   } else {
-    const fallbackChord =
-      expectedPost.length > 0
-        ? expectedPost[expectedPost.length - 1]!.chord
-        : point.accentNote.chord;
+    // More trailing syllables than this cadence defines postAccent notes
+    // for. Per the Anglican-chant convention (see refs/README.md's
+    // "Anglican chant" section, quoting the source book directly): the
+    // *excess* syllables -- the ones right after the accent -- extend the
+    // accent's own held note, while the notes actually written stay
+    // anchored to the true end of the colon. E.g. a 2-note cadence
+    // (accent + one postAccent note) fitting 3 trailing syllables sings
+    // the first two on the accent's note and only the last on the second
+    // note -- not (as a naive "repeat the last note" rule would give) the
+    // last two both on the second note.
+    const excess = trailing.length - expectedPost.length;
     trailing.forEach((_, i) => {
-      const chord = i < expectedPost.length ? expectedPost[i]!.chord : fallbackChord;
+      const chord = i < excess ? point.accentNote.chord : expectedPost[i - excess]!.chord;
       result[anchor + 1 + i]!.chords.push(chord);
     });
   }
