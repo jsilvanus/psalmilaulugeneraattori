@@ -157,6 +157,17 @@ useful for transcribing formulas 2-5:
   formula right but garbled one chord badly enough to need a re-check, and
   still needed real music-theory judgment (nearest-neighbour octave
   placement, no-crossing constraints) to turn into absolute pitches.
+- **Accidentals**: the tone/chord data model now carries a per-note
+  `accidental` field (`CadenceNote.accidental` in `types.ts`,
+  `ChordCadenceNote.accidental` in `chordTypes.ts`), rendered in ABC output
+  as the standard `^`/`_`/`=` prefix (see `output/abc.ts`'s `abcPitch`);
+  `ToneFormula.hasBFlat`/`AbcMeta.hasBFlat` similarly now actually switches
+  the ABC header to `K:F` instead of sitting inert. GABC output still
+  doesn't render either, deliberately — see `output/gabc.ts`'s own note.
+  `anglicanChant.ts`'s one real individual accidental (the source's `^d,4`
+  on the alto voice) is now encoded this way; see its DATA SOURCE comment
+  for why the matching `=d,8` resolution isn't (a courtesy natural on a
+  reused reciting chord, not a real accidental).
 - **What worked**: the project owner writing the tone out directly as ABC
   notation (see `anglicanChant.ts`'s DATA SOURCE comment for tone 1's
   source verbatim) — exact, no reconstruction needed. One real gotcha:

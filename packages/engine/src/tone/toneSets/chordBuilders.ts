@@ -2,8 +2,10 @@ import type {
   Chord,
   ChordAccentPoint,
   ChordCadenceFormula,
+  ChordCadenceNote,
   ChordDifferentia,
   ChordToneFormula,
+  VoiceAccidentals,
 } from '../chordTypes.js';
 
 /**
@@ -16,26 +18,37 @@ export function chord(soprano: number, alto: number, tenor: number, bass: number
   return { soprano, alto, tenor, bass };
 }
 
-export function chordNote(c: Chord) {
-  return { chord: c };
+export function chordNote(c: Chord, accidental?: VoiceAccidentals): ChordCadenceNote {
+  return accidental ? { chord: c, accidental } : { chord: c };
+}
+
+/**
+ * A cadence-array element: either a plain Chord (the common case), or a
+ * ChordCadenceNote when that particular chord needs a per-voice accidental
+ * (see anglicanChant.ts's mediant preparatory chord for a real example).
+ */
+type ChordNoteInput = Chord | ChordCadenceNote;
+
+function normalizeChordNote(input: ChordNoteInput): ChordCadenceNote {
+  return 'chord' in input ? input : chordNote(input);
 }
 
 export function chordAccentPoint(
-  preparatory: Chord[],
-  accentNote: Chord,
-  postAccent: Chord[],
+  preparatory: ChordNoteInput[],
+  accentNote: ChordNoteInput,
+  postAccent: ChordNoteInput[],
 ): ChordAccentPoint {
   return {
-    preparatory: preparatory.map(chordNote),
-    accentNote: chordNote(accentNote),
-    postAccent: postAccent.map(chordNote),
+    preparatory: preparatory.map(normalizeChordNote),
+    accentNote: normalizeChordNote(accentNote),
+    postAccent: postAccent.map(normalizeChordNote),
   };
 }
 
 export function chordCadence(
-  preparatory: Chord[],
-  accentNote: Chord,
-  postAccent: Chord[],
+  preparatory: ChordNoteInput[],
+  accentNote: ChordNoteInput,
+  postAccent: ChordNoteInput[],
   secondaryAccent?: ChordAccentPoint,
 ): ChordCadenceFormula {
   return { ...chordAccentPoint(preparatory, accentNote, postAccent), secondaryAccent };
@@ -43,9 +56,9 @@ export function chordCadence(
 
 export function chordDifferentia(
   label: string | undefined,
-  preparatory: Chord[],
-  accentNote: Chord,
-  postAccent: Chord[],
+  preparatory: ChordNoteInput[],
+  accentNote: ChordNoteInput,
+  postAccent: ChordNoteInput[],
   secondaryAccent?: ChordAccentPoint,
 ): ChordDifferentia {
   return { label, ...chordCadence(preparatory, accentNote, postAccent, secondaryAccent) };
@@ -68,7 +81,7 @@ export function buildChordTone(spec: ChordToneSpec): ChordToneFormula {
     name: spec.name,
     reciting: spec.reciting,
     secondReciting: spec.secondReciting,
-    intonation: spec.intonation?.map(chordNote),
+    intonation: spec.intonation?.map((c) => chordNote(c)),
     flex: spec.flex,
     mediant: spec.mediant,
     termination: spec.termination,

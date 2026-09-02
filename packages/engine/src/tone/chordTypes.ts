@@ -1,4 +1,4 @@
-import type { ScaleDegree } from './types.js';
+import type { Accidental, ScaleDegree } from './types.js';
 
 /**
  * Anglican chant is four-part harmony (SATB), homophonic: all four voices
@@ -14,8 +14,15 @@ export interface Chord {
   bass: ScaleDegree;
 }
 
+export type VoiceName = 'soprano' | 'alto' | 'tenor' | 'bass';
+
+/** Per-voice accidentals for one chord, beyond the tune's own key signature. */
+export type VoiceAccidentals = Partial<Record<VoiceName, Accidental>>;
+
 export interface ChordCadenceNote {
   chord: Chord;
+  /** Only set where one or more voices need an accidental for this chord. */
+  accidental?: VoiceAccidentals;
 }
 
 /**

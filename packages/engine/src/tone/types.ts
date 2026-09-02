@@ -1,7 +1,16 @@
 export type ScaleDegree = number;
 
+/**
+ * An accidental applied to one note, independent of the tune's own key
+ * signature (see `ToneFormula.hasBFlat`) -- e.g. a courtesy or cadential
+ * sharp/natural that doesn't belong to the tune's overall signature.
+ */
+export type Accidental = 'sharp' | 'flat' | 'natural';
+
 export interface CadenceNote {
   degree: ScaleDegree;
+  /** Only set where a note needs an accidental beyond the tune's key signature. */
+  accidental?: Accidental;
 }
 
 /**

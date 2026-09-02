@@ -11,7 +11,7 @@ import type {
 export interface PitchedChordSyllable {
   text: string;
   /** Usually one chord; more than one only when a short colon forces a small melisma. */
-  chords: Chord[];
+  chords: ChordCadenceNote[];
   isWordStart: boolean;
 }
 
@@ -64,13 +64,13 @@ function applyChordAccent(
   const expectedPost = point.postAccent;
   if (trailing.length === expectedPost.length) {
     trailing.forEach((_, i) => {
-      result[anchor + 1 + i]!.chords.push(expectedPost[i]!.chord);
+      result[anchor + 1 + i]!.chords.push(expectedPost[i]!);
     });
   } else if (trailing.length < expectedPost.length) {
     const deficit = expectedPost.length - trailing.length;
-    result[anchor]!.chords.push(...expectedPost.slice(0, deficit).map((n) => n.chord));
+    result[anchor]!.chords.push(...expectedPost.slice(0, deficit));
     trailing.forEach((_, i) => {
-      result[anchor + 1 + i]!.chords.push(expectedPost[deficit + i]!.chord);
+      result[anchor + 1 + i]!.chords.push(expectedPost[deficit + i]!);
     });
   } else {
     // More trailing syllables than this cadence defines postAccent notes
@@ -85,12 +85,12 @@ function applyChordAccent(
     // last two both on the second note.
     const excess = trailing.length - expectedPost.length;
     trailing.forEach((_, i) => {
-      const chord = i < excess ? point.accentNote.chord : expectedPost[i - excess]!.chord;
-      result[anchor + 1 + i]!.chords.push(chord);
+      const chordNote = i < excess ? point.accentNote : expectedPost[i - excess]!;
+      result[anchor + 1 + i]!.chords.push(chordNote);
     });
   }
 
-  result[anchor]!.chords.unshift(point.accentNote.chord);
+  result[anchor]!.chords.unshift(point.accentNote);
 
   const beforeAnchor = anchor;
   const prep = point.preparatory;
@@ -98,13 +98,13 @@ function applyChordAccent(
   if (beforeAnchor >= prep.length) {
     const recitingCount = beforeAnchor - prep.length;
     for (let i = 0; i < prep.length; i++) {
-      result[recitingCount + i]!.chords.push(prep[i]!.chord);
+      result[recitingCount + i]!.chords.push(prep[i]!);
     }
     return recitingCount;
   }
   const startIdx = prep.length - beforeAnchor;
   for (let i = 0; i < beforeAnchor; i++) {
-    result[i]!.chords.push(prep[startIdx + i]!.chord);
+    result[i]!.chords.push(prep[startIdx + i]!);
   }
   return 0;
 }
@@ -154,13 +154,13 @@ export function fitChordColon(
   }
 
   for (let i = 0; i < recitingCount; i++) {
-    result[i]!.chords.push(recitingChord);
+    result[i]!.chords.push({ chord: recitingChord });
   }
 
   if (options.isFirstColonOfFirstVerse && intonation && intonation.length > 0) {
     const count = Math.min(intonation.length, primaryAnchor);
     for (let i = 0; i < count; i++) {
-      result[i]!.chords = [intonation[i]!.chord];
+      result[i]!.chords = [intonation[i]!];
     }
   }
 

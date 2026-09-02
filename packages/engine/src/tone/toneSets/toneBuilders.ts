@@ -1,6 +1,8 @@
 import type {
   AccentPoint,
+  Accidental,
   CadenceFormula,
+  CadenceNote,
   Differentia,
   ScaleDegree,
   ToneFormula,
@@ -12,8 +14,8 @@ import type {
  * numbers instead of nested `{ degree: N }` objects everywhere.
  */
 
-export function note(degree: ScaleDegree): { degree: ScaleDegree } {
-  return { degree };
+export function note(degree: ScaleDegree, accidental?: Accidental): CadenceNote {
+  return accidental ? { degree, accidental } : { degree };
 }
 
 export function accentPoint(
@@ -22,9 +24,9 @@ export function accentPoint(
   postAccent: ScaleDegree[],
 ): AccentPoint {
   return {
-    preparatory: preparatory.map(note),
+    preparatory: preparatory.map((d) => note(d)),
     accentNote: note(accentNote),
-    postAccent: postAccent.map(note),
+    postAccent: postAccent.map((d) => note(d)),
   };
 }
 
@@ -67,7 +69,7 @@ export function buildTone(spec: ToneSpec): ToneFormula {
     reciting: spec.reciting,
     secondReciting: spec.secondReciting,
     hasBFlat: spec.hasBFlat,
-    intonation: spec.intonation?.map(note),
+    intonation: spec.intonation?.map((d) => note(d)),
     flex: spec.flex,
     mediant: spec.mediant,
     termination: spec.termination,

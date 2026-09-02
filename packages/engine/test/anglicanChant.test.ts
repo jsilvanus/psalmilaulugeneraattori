@@ -36,6 +36,12 @@ describe('anglicanChantToneSet', () => {
     expect(tone.flex).toBeUndefined();
   });
 
+  it("carries the source's one real accidental (^d, alto) on the mediant's second preparatory chord", () => {
+    const tone = anglicanChantToneSet.tones[0]!;
+    expect(tone.mediant.preparatory[1]!.accidental).toEqual({ alto: 'sharp' });
+    expect(tone.mediant.preparatory[0]!.accidental).toBeUndefined();
+  });
+
   it('fits a real Finnish verse onto anglican-1 end-to-end and emits valid chordal ABC', () => {
     const tone = anglicanChantToneSet.tones[0]!;
     const cola = [

@@ -8,10 +8,12 @@ import type { ScaleDegree } from '../tone/types.js';
 const GABC_LETTERS = 'abcdefghijklm';
 const FINAL_LETTER_INDEX = GABC_LETTERS.indexOf('h');
 
-// NOTE: hasBFlat tones (5/6-style signature) are not yet reflected in the
-// emitted pitch letters -- GABC's accidental syntax needs to be verified
-// against the Gregorio spec before it's implemented, rather than guessed.
-// This is a known v1 gap, not a silent inaccuracy: no flat is ever emitted.
+// NOTE: hasBFlat tones (5/6-style signature) and per-note CadenceNote.accidental
+// values are not yet reflected in the emitted pitch letters, even though both
+// are now modelled at the type level (see tone/types.ts) and rendered in ABC
+// output (output/abc.ts) -- GABC's accidental syntax needs to be verified
+// against the Gregorio spec before it's implemented here, rather than guessed.
+// This is a known v1 gap, not a silent inaccuracy: no accidental is ever emitted.
 function gabcPitchLetter(degree: ScaleDegree): string {
   const index = FINAL_LETTER_INDEX + degree;
   const letter = GABC_LETTERS[index];

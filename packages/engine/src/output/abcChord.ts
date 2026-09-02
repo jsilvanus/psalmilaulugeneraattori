@@ -1,5 +1,5 @@
 import type { PitchedChordColon } from '../tone/fitChord.js';
-import type { Chord } from '../tone/chordTypes.js';
+import type { ChordCadenceNote } from '../tone/chordTypes.js';
 import { abcPitch } from './abc.js';
 
 // One ABC "chord" per note position, bracketed ([CEGc]) -- a single voice
@@ -7,8 +7,9 @@ import { abcPitch } from './abc.js';
 // PitchedChordColon: each voice keeps its own degree, so a future
 // choir-ready (four-staff) emitter can read the exact same fitted data;
 // this is just today's simpler rendering choice, not a data-model limit.
-function emitChord(chord: Chord): string {
-  return `[${abcPitch(chord.soprano)}${abcPitch(chord.alto)}${abcPitch(chord.tenor)}${abcPitch(chord.bass)}]`;
+function emitChord(note: ChordCadenceNote): string {
+  const { chord, accidental } = note;
+  return `[${abcPitch(chord.soprano, accidental?.soprano)}${abcPitch(chord.alto, accidental?.alto)}${abcPitch(chord.tenor, accidental?.tenor)}${abcPitch(chord.bass, accidental?.bass)}]`;
 }
 
 function emitColonNotes(colon: PitchedChordColon): string {

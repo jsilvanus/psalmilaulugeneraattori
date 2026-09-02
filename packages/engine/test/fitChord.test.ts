@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fitChordColon, fitChordVerse } from '../src/tone/fitChord.js';
 import type { ChordCadenceFormula, ChordToneFormula } from '../src/tone/chordTypes.js';
 import type { Word } from '../src/phonology/types.js';
-import { chord } from '../src/tone/toneSets/chordBuilders.js';
+import { chord, chordNote } from '../src/tone/toneSets/chordBuilders.js';
 
 function word(syllables: { text: string; hasStress: boolean }[]): Word {
   return {
@@ -39,7 +39,7 @@ describe('fitChordColon', () => {
       RECITING,
       undefined,
     );
-    expect(result.map((s) => s.chords)).toEqual([[A], [B]]);
+    expect(result.map((s) => s.chords)).toEqual([[chordNote(A)], [chordNote(B)]]);
   });
 
   it('merges a postAccent shortfall onto the accent syllable as a melisma', () => {
@@ -55,7 +55,7 @@ describe('fitChordColon', () => {
       RECITING,
       undefined,
     );
-    expect(result.map((s) => s.chords)).toEqual([[A, B, C]]);
+    expect(result.map((s) => s.chords)).toEqual([[chordNote(A), chordNote(B), chordNote(C)]]);
   });
 
   it('extends the accent chord for excess trailing syllables, keeping postAccent anchored to the true end (Anglican convention)', () => {
@@ -82,7 +82,7 @@ describe('fitChordColon', () => {
       RECITING,
       undefined,
     );
-    expect(result.map((s) => s.chords)).toEqual([[A], [A], [B]]);
+    expect(result.map((s) => s.chords)).toEqual([[chordNote(A)], [chordNote(A)], [chordNote(B)]]);
   });
 
   it('falls back to the accent chord for excess trailing syllables when postAccent is empty', () => {
@@ -101,7 +101,7 @@ describe('fitChordColon', () => {
       RECITING,
       undefined,
     );
-    expect(result.map((s) => s.chords)).toEqual([[A], [A], [A]]);
+    expect(result.map((s) => s.chords)).toEqual([[chordNote(A)], [chordNote(A)], [chordNote(A)]]);
   });
 
   it('puts extra syllables before the preparatory notes on the plain reciting chord', () => {
@@ -120,7 +120,11 @@ describe('fitChordColon', () => {
       RECITING,
       undefined,
     );
-    expect(result.map((s) => s.chords)).toEqual([[RECITING], [B], [A]]);
+    expect(result.map((s) => s.chords)).toEqual([
+      [chordNote(RECITING)],
+      [chordNote(B)],
+      [chordNote(A)],
+    ]);
   });
 
   it('drops leading preparatory chords when there are fewer syllables than prep slots', () => {
@@ -139,7 +143,7 @@ describe('fitChordColon', () => {
       RECITING,
       undefined,
     );
-    expect(result.map((s) => s.chords)).toEqual([[B], [A]]);
+    expect(result.map((s) => s.chords)).toEqual([[chordNote(B)], [chordNote(A)]]);
   });
 
   it('applies a secondaryAccent to an earlier stressed syllable within the plain reciting region', () => {
@@ -162,7 +166,12 @@ describe('fitChordColon', () => {
       RECITING,
       undefined,
     );
-    expect(result.map((s) => s.chords)).toEqual([[RECITING], [D], [C], [A]]);
+    expect(result.map((s) => s.chords)).toEqual([
+      [chordNote(RECITING)],
+      [chordNote(D)],
+      [chordNote(C)],
+      [chordNote(A)],
+    ]);
   });
 });
 

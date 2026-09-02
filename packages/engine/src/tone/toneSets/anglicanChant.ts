@@ -1,5 +1,11 @@
 import type { ChordToneFormula, ChordToneSet } from '../chordTypes.js';
-import { buildChordTone, chord, chordCadence, chordDifferentia } from './chordBuilders.js';
+import {
+  buildChordTone,
+  chord,
+  chordCadence,
+  chordDifferentia,
+  chordNote,
+} from './chordBuilders.js';
 
 /*
  * DATA SOURCE:
@@ -48,9 +54,19 @@ import { buildChordTone, chord, chordCadence, chordDifferentia } from './chordBu
  * half-note bars)] + [final whole note]. No flex (Anglican chant verses
  * are always bipartite).
  *
- * Key signature (G major, one sharp) and the individual accidentals
- * (^d, =d) are not modelled -- same as everywhere else in this project,
- * only the diatonic scale-degree/staff-position is encoded.
+ * Key signature (G major, one sharp) is not modelled -- same as everywhere
+ * else in this project, only the diatonic scale-degree/staff-position is
+ * encoded. The source's one real *individual* accidental, `^d,4` (alto,
+ * mediant's second preparatory chord: a sharpened D, i.e. a raised step
+ * within the chord rather than the plain diatonic D the key signature
+ * would otherwise give that voice), is modelled below via `chordNote`'s
+ * accidental option. Its resolution, `=d,8` (alto, termination's reciting
+ * chord), is a courtesy natural, not a real accidental: D carries no sharp
+ * or flat in G major's own signature, so it needs no `accidental` marking
+ * here -- and `secondReciting` is a plain Chord reused across however many
+ * syllables the termination's reciting region needs, so marking it would
+ * spam the symbol on every one of them rather than showing it once as the
+ * source does.
  */
 
 const tones: ChordToneFormula[] = [
@@ -59,9 +75,11 @@ const tones: ChordToneFormula[] = [
     name: 'Anglikaaninen sävelmä 1',
     reciting: chord(16, 12, 7, 5), // mediant's reciting chord
     secondReciting: chord(14, 11, 9, 0), // termination's reciting chord
-    mediant: chordCadence([chord(14, 12, 9, 5), chord(15, 13, 10, 1)], chord(13, 11, 9, 2), [
+    mediant: chordCadence(
+      [chord(14, 12, 9, 5), chordNote(chord(15, 13, 10, 1), { alto: 'sharp' })],
       chord(13, 11, 9, 2),
-    ]),
+      [chord(13, 11, 9, 2)],
+    ),
     termination: [
       chordDifferentia(
         undefined,
