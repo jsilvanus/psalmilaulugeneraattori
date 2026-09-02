@@ -40,7 +40,17 @@ export type CadenceFormula = CadenceFormulaOf<CadenceNote>;
  */
 export type Differentia = DifferentiaOf<CadenceNote>;
 
-export type ChurchMode = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+/**
+ * The 8 medieval church modes (1-8: Dorian through Hypomixolydian) plus
+ * Glarean's 1547 Dodecachordon extension (9-12: Aeolian, Hypoaeolian,
+ * Ionian, Hypoionian) -- "modes developed after medieval times" in the
+ * historical sense. Unlike 1-8, modes 9-12 were an analytical/classification
+ * framework, not a new liturgical psalmody practice: no chant book defines
+ * mediant/termination cadence formulas for them the way the Liber Usualis
+ * does for 1-8, so a `ToneSet.defaultToneForMode` may legitimately have no
+ * tone for some of them (see catholicGregorian.ts's own handling).
+ */
+export type ChurchMode = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
 export interface ToneFormula {
   id: string;

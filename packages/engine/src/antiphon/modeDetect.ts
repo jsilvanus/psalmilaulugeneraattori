@@ -147,6 +147,10 @@ const MODE_PAIR_FOR_FINAL: Record<string, [ChurchMode, ChurchMode]> = {
   E: [3, 4],
   F: [5, 6],
   G: [7, 8],
+  // Glarean's 1547 additions (see types.ts's ChurchMode doc comment):
+  // Aeolian/Hypoaeolian (final A) and Ionian/Hypoionian (final C).
+  A: [9, 10],
+  C: [11, 12],
 };
 
 export interface ModeDetectionResult {
@@ -166,7 +170,7 @@ export function detectMode(analysis: MelodyAnalysis): ModeDetectionResult {
   const pair = MODE_PAIR_FOR_FINAL[finalLetter];
   if (!pair) {
     throw new Error(
-      `Antiphon final "${finalLetter}" is not one of the four standard finals (D, E, F, G); ` +
+      `Antiphon final "${finalLetter}" is not one of the six supported finals (D, E, F, G, A, C); ` +
         'mode detection needs a manual override for this melody.',
     );
   }

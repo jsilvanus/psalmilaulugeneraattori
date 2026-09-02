@@ -171,7 +171,18 @@ export const catholicGregorianToneSet: ToneSet = {
   name: 'Catholic / Gregorian (Solesmes)',
   tones: [...tones, tonusPeregrinus],
   defaultToneForMode(mode) {
-    const tone = this.tones.find((t) => t.id === `tonus-${mode}`);
+    // Modes 11/12 (Ionian/Hypoionian, Glarean's 1547 additions -- see
+    // types.ts's ChurchMode doc comment) aren't separately transcribed:
+    // Tone 5/6 (Lydian/Hypolydian) WITH the customary B-flat already has
+    // this engine's Ionian interval pattern exactly (that's what hasBFlat
+    // marks below), so they're reused directly rather than duplicated.
+    // Modes 9/10 (Aeolian/Hypoaeolian) have no such equivalent among 1-8 --
+    // no single customary accidental turns any of them into natural minor
+    // -- and no sourced psalm-tone cadence data exists to transcribe for
+    // them either, so they fall through to the same "not found" error
+    // rather than guessing at an approximation.
+    const effectiveMode = mode === 11 ? 5 : mode === 12 ? 6 : mode;
+    const tone = this.tones.find((t) => t.id === `tonus-${effectiveMode}`);
     if (!tone) throw new Error(`No default tone for mode ${mode} in tone set "${this.id}".`);
     return tone;
   },
