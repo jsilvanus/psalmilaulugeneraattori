@@ -12,7 +12,8 @@ import {
 
 describe('parseBibleCsv', () => {
   it('parses quoted, semicolon-delimited rows', () => {
-    const csv = '"1";"1";"1";"Alussa loi Jumala taivaan ja maan. "\r\n"1";"1";"2";"Ja maa oli autio. "';
+    const csv =
+      '"1";"1";"1";"Alussa loi Jumala taivaan ja maan. "\r\n"1";"1";"2";"Ja maa oli autio. "';
     expect(parseBibleCsv(csv)).toEqual([
       { book: 1, chapter: 1, verse: 1, text: 'Alussa loi Jumala taivaan ja maan. ' },
       { book: 1, chapter: 1, verse: 2, text: 'Ja maa oli autio. ' },
@@ -22,7 +23,12 @@ describe('parseBibleCsv', () => {
   it('unescapes doubled quotes inside a quoted field', () => {
     const csv = '"1";"1";"3";"Ja Jumala sanoi: ""Tulkoon valkeus"". Ja valkeus tuli. "';
     expect(parseBibleCsv(csv)).toEqual([
-      { book: 1, chapter: 1, verse: 3, text: 'Ja Jumala sanoi: "Tulkoon valkeus". Ja valkeus tuli. ' },
+      {
+        book: 1,
+        chapter: 1,
+        verse: 3,
+        text: 'Ja Jumala sanoi: "Tulkoon valkeus". Ja valkeus tuli. ',
+      },
     ]);
   });
 
@@ -70,7 +76,10 @@ describe('parseVerseReference', () => {
   });
 
   it('parses a single range', () => {
-    expect(parseVerseReference('3:1-4')).toEqual({ psalmNumber: 3, ranges: [{ start: 1, end: 4 }] });
+    expect(parseVerseReference('3:1-4')).toEqual({
+      psalmNumber: 3,
+      ranges: [{ start: 1, end: 4 }],
+    });
   });
 
   it('parses multiple comma-separated ranges and singles', () => {
@@ -133,10 +142,12 @@ describe('selectVerses', () => {
   });
 
   it('returns verses in ascending order regardless of range order in the reference', () => {
-    expect(selectVerses(verses, [
-      { start: 6, end: 8 },
-      { start: 1, end: 4 },
-    ])).toEqual(verses.filter((v) => v.number <= 4 || v.number >= 6));
+    expect(
+      selectVerses(verses, [
+        { start: 6, end: 8 },
+        { start: 1, end: 4 },
+      ]),
+    ).toEqual(verses.filter((v) => v.number <= 4 || v.number >= 6));
   });
 });
 

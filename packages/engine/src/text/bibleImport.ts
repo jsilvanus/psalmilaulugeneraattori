@@ -149,7 +149,10 @@ export function parseVerseReference(spec: string): VerseReference {
       const n = parsePositiveInt(part, `verse "${part}"`);
       return { start: n, end: n };
     }
-    const start = parsePositiveInt(part.slice(0, dashIndex).trim(), `verse range start in "${part}"`);
+    const start = parsePositiveInt(
+      part.slice(0, dashIndex).trim(),
+      `verse range start in "${part}"`,
+    );
     const end = parsePositiveInt(part.slice(dashIndex + 1).trim(), `verse range end in "${part}"`);
     if (start > end) {
       throw new Error(`Verse range "${part}" has a start greater than its end.`);

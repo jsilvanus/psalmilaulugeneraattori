@@ -12,7 +12,9 @@ describe('parseVerseLine', () => {
   });
 
   it('extracts a leading verse number', () => {
-    const verse = parseVerseLine('1 Herra sanoi minun herralleni: * istu minun oikealle puolelleni.');
+    const verse = parseVerseLine(
+      '1 Herra sanoi minun herralleni: * istu minun oikealle puolelleni.',
+    );
     expect(verse.number).toBe(1);
     expect(verse.cola[0]!.text).toBe('Herra sanoi minun herralleni:');
   });

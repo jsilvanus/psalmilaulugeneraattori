@@ -10,7 +10,10 @@ export interface ClusterToken {
  * clusters, using a per-index vowel predicate (Latin needs this to be
  * positional, since qu/gu reclassify a specific 'u' as a consonant).
  */
-export function tokenizeClusters(core: string, isVowelAt: (index: number) => boolean): ClusterToken[] {
+export function tokenizeClusters(
+  core: string,
+  isVowelAt: (index: number) => boolean,
+): ClusterToken[] {
   const tokens: ClusterToken[] = [];
   let i = 0;
   while (i < core.length) {

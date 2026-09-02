@@ -60,7 +60,10 @@ export function parseVerseLine(rawLine: string): PsalmVerse {
   } else {
     const starCount = countOccurrences(body, '*');
     if (starCount === 0) {
-      throw new VerseParseError('A verse must contain a * marker for the mediant caesura.', rawLine);
+      throw new VerseParseError(
+        'A verse must contain a * marker for the mediant caesura.',
+        rawLine,
+      );
     }
     if (starCount > 1) {
       throw new VerseParseError('A bipartite verse must contain exactly one * marker.', rawLine);
