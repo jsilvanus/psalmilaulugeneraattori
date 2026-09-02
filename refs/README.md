@@ -61,3 +61,90 @@ it's worth extracting carefully rather than approximating.
 This is the church's own published liturgical handbook, kept here for
 internal reference/data-extraction use by this project, not for
 redistribution.
+
+## `jpkirja-musiikkia-psalmeihin.pdf`
+
+The same "Musiikkia psalmeihin" appendix as in `jpkirja.doc` above, but as
+its own clean 10-page PDF from kirkkokasikirja.fi
+(`https://kirkkokasikirja.fi/jp/381_gregps.pdf`), found via web search after
+`jpkirja.doc`'s embedded WMF images proved too unreliable to transcribe
+automatically with confidence. Unlike the `.doc`, this PDF is genuinely
+vector-rendered (confirmed via `pdftotext -bbox`/`pdffonts`: real glyph
+bounding boxes in the embedded `DPAKEP+capella` font, not raster scans), so
+it's the PDF actually used for `finnishGregorian.ts` and `finnishOther.ts`'s
+transcription (both done by the project owner reading it directly and
+dictating note letters) and for the Anglican-chant extraction attempt below.
+
+Pages 381-386: Gregorian-style tones (source for `finnishGregorian.ts`,
+tones I-VIII + peregrinus + irregularis). Pages 387-388: Anglican-style
+tones (5 numbered formulas + 2 worked examples — see next section). Pages
+389+: "Muita psalmisävelmiä", 13 numbered tones (source for
+`finnishOther.ts`) plus SATB variants for tones 8 and 9 (source for
+`finnishOtherChordal.ts`).
+
+### Anglican chant (pp. 387-388): structure confirmed, pitch data not yet transcribed
+
+The engine has a chordal (SATB) data model and fitting pipeline built
+specifically for this (`chordTypes.ts`, `chordBuilders.ts`, `fitChord.ts`,
+`output/abcChord.ts` — proven out already on `finnishOtherChordal.ts`'s
+tones 8/9 SATB variants), but **no `anglicanChant.ts` tone set exists yet**
+— an attempt to extract the 5 formulas' actual pitches programmatically
+(since the project owner was unavailable to dictate them, unlike every
+other tone set here) did not reach a confidence level worth committing as
+real data. What *is* confirmed, worth preserving so the next attempt (by
+either better tooling or dictation) doesn't have to redo it:
+
+- **Single vs. double chant**: formulas 1-4 are single chants (one
+  grand-staff system, i.e. one mediant+termination pair reused every
+  verse). Formula 5 is a **double chant** (two systems/strains, used
+  alternately across two consecutive verses) — confirmed by cross-checking
+  against "esimerkki 1" (uses formula 5's first strain alone, i.e. formula
+  5 used as a single chant for one verse) and "esimerkki 2" (uses *both*
+  of formula 5's strains, one per verse, with real underlaid text). A
+  double chant doesn't fit the engine's existing bipartite (mediant +
+  termination) `ColonRole` shape as one `ChordToneFormula` — model it as
+  two linked strains (two `ChordToneFormula`s, alternated by the
+  verse-fitting caller) rather than extending `ColonRole`.
+- **Pointing convention**, confirmed both from the book's own prose (p.
+  387: "the barline corresponds to the Gregorian tone's accent mark; the
+  colon's last accented syllable goes on the ending whole note, followed
+  by up to two unaccented syllables") and empirically from "esimerkki
+  1"'s real text underlay (`Palvelkaa hän-tä iloiten, tulkaa hä-nen
+  eteen-sä riemuiten.`): each half (mediant/termination) is **[reciting
+  whole-note chord, absorbing every leading unstressed syllable] + [N
+  preparatory half-note chords] + [1 final whole-note chord = the last
+  stressed syllable, which also absorbs up to 2 more trailing unstressed
+  syllables on that same held chord]**. This maps directly onto the
+  existing `ChordCadenceFormula` shape (`preparatory` + `accentNote` +
+  `postAccent: [accentNote]`, relying on `fitChord.ts`'s existing overflow
+  handling for the "up to 2 more syllables" part) — no engine changes
+  needed once real chord data exists. For formula 5 specifically: N=2 for
+  the mediant, N=4 for the termination (read off "esimerkki 1"'s
+  syllable-to-chord alignment).
+- **One spot-confirmed data point** (formula 5 / esimerkki 1's very first
+  chord, the mediant's reciting chord): soprano B4, alto G4 (both sit
+  exactly on staff lines — treble clef, key signature one sharp/G major),
+  tenor and bass close to D3/C3.
+- **What was tried and didn't reach a committable confidence level**:
+  (a) reading the embedded font's text/glyph codes directly — the
+  `capella` font's glyphs are Private Use Area codepoints keyed to
+  specific noteheads, but `pdftotext -bbox`'s reported glyph bounding
+  boxes are padded to a constant per-glyph height that doesn't track
+  pitch, and adjacent glyphs sometimes get merged into one "word",
+  losing per-notehead resolution; (b) connected-component notehead
+  detection on 600dpi renders (erasing the detected staff-line rows first
+  so they stop merging every symbol into one blob) — works well for some
+  chords (clean integer line/space readings) but noisy for others,
+  likely from touching ink between adjacent voices/accidentals/stems;
+  (c) direct visual reading of zoomed crops — reliable for isolated
+  chords sitting cleanly on staff lines (see the one confirmed data point
+  above), but not fast or reliable enough across all ~18 chords across
+  formula 5's two strains (let alone formulas 1-4) to trust without the
+  project owner's own eyes on it.
+- **Recommended next step**: now that the pointing convention is fully
+  understood, the fastest reliable path is very likely the project owner
+  dictating the 5 formulas the same way they dictated `finnishOtherChordal.ts`'s
+  tune 8/9 SATB variants (bare note letters per voice, case for the
+  reciting marker, `(lower)` for octave drops) — now shorter than before
+  since only the reciting chord + N prep chords + final chord need
+  stating per half, not a full syllable-by-syllable figure.
