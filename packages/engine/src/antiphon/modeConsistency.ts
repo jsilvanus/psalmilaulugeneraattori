@@ -65,6 +65,27 @@ const CANONICAL_PAIR: Partial<Record<string, [ChurchMode, ChurchMode]>> = {
 const CANONICAL_LETTERS = new Set(Object.keys(CANONICAL_PAIR).map((key) => key.split('-')[0]!));
 
 /**
+ * Historical fact, sourced (not derived): under certain melodic conditions
+ * -- the "mi contra fa" tritone-avoidance rule, B against F -- B was
+ * customarily flattened in modes I/II (Dorian, final D) and, more usually,
+ * modes V/VI (Lydian, final F), without the chant ceasing to be considered
+ * that mode. A chant in one of these two (root, species) pairs may licitly
+ * mix B-natural and B-flat; the strict single-interval-set check below
+ * would otherwise misclassify that as inconsistent, or as a different
+ * species (D-Aeolian) entirely, so these two pairs don't police the B
+ * degree strictly. Deliberately NOT modeling the actual melodic condition
+ * (flat specifically when the phrase approaches/frames F) -- that needs a
+ * properly citable rule, not a derived guess; see refs/README.md's
+ * "Customary B-flat" section for what's confirmed so far and what's
+ * deferred (TODO: contour-aware checking, not just a static per-species
+ * exemption).
+ */
+const CUSTOMARY_FLEXIBLE_LETTER: Partial<Record<string, string>> = {
+  'D-Dorian': 'B',
+  'F-Lydian': 'B',
+};
+
+/**
  * Checks a melody's ACTUAL pitch content -- not just its final's bare
  * letter, the way detectMode does -- against every one of the 7 diatonic
  * mode species, anchored at the melody's own final (whatever note it
@@ -73,11 +94,14 @@ const CANONICAL_LETTERS = new Set(Object.keys(CANONICAL_PAIR).map((key) => key.s
  * this can return zero, one, or several matches:
  *
  * - Zero: the melody uses a note that fits no species at that root at all
- *   -- e.g. you intended Dorian, landed on D, but used a flat 6th (Bb)
- *   somewhere, which Dorian's natural 6th doesn't allow. That's made
+ *   -- e.g. you intended Dorian, landed on D, but used an F# (raised 3rd)
+ *   somewhere, which no customary Dorian inflection allows. That's made
  *   visible here instead of silently accepted the way detectMode would
  *   (detectMode only ever looks at the final, so "ends on D" alone is
  *   enough for it to call it mode 1 regardless of what else was used).
+ *   Note that a D-final melody mixing B-natural and B-flat is NOT such a
+ *   case -- see CUSTOMARY_FLEXIBLE_LETTER -- that's sourced, sanctioned
+ *   practice for Dorian/Lydian specifically, not a real inconsistency.
  * - Several: the melody is short/simple enough that it never uses the one
  *   note that would tell two species apart -- an honest "could be either"
  *   rather than a falsely confident single answer.
@@ -102,10 +126,6 @@ export function checkModeConsistency(abcText: string): ModeConsistencyMatch[] {
   const root: ModeRoot = { letter: finalEvent.letter, accidental: rootAccidental };
   const rootSemitone = semitoneClass(root.letter, root.accidental);
 
-  const usedClasses = new Set(
-    events.map((e) => semitoneClass(e.letter, e.explicitAccidental ?? e.keySignatureAccidental)),
-  );
-
   // Only a natural final on one of the six canonical letters can map back
   // to a real ChurchMode. Computed once (not per species below), and never
   // throws: detectMode only throws for a final outside D/E/F/G/A/C, which
@@ -120,7 +140,18 @@ export function checkModeConsistency(abcText: string): ModeConsistencyMatch[] {
     const speciesClasses = new Set(
       SPECIES_INTERVALS[species]!.map((offset) => (rootSemitone + offset) % 12),
     );
-    const fits = [...usedClasses].every((pitchClass) => speciesClasses.has(pitchClass));
+    // See CUSTOMARY_FLEXIBLE_LETTER's own doc comment: for the two
+    // sourced (root, species) pairs, a note on this letter is exempted
+    // from the strict check below regardless of which accidental it uses.
+    const flexLetter = root.accidental
+      ? undefined
+      : CUSTOMARY_FLEXIBLE_LETTER[`${root.letter}-${species}`];
+    const fits = events.every((e) => {
+      if (flexLetter && e.letter === flexLetter) return true;
+      return speciesClasses.has(
+        semitoneClass(e.letter, e.explicitAccidental ?? e.keySignatureAccidental),
+      );
+    });
     if (!fits) continue;
 
     const pair = root.accidental ? undefined : CANONICAL_PAIR[`${root.letter}-${species}`];

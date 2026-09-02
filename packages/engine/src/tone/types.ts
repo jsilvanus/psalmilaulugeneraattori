@@ -65,7 +65,16 @@ export interface ToneFormula {
    * this degree is used instead of `reciting` for the termination colon.
    */
   secondReciting?: ScaleDegree;
-  /** Whether this tone conventionally uses a B-flat (tones 5/6-style signature). */
+  /**
+   * Whether this tone conventionally uses a B-flat (tones 5/6-style
+   * signature) -- a coarse, whole-tune approximation of the real "mi
+   * contra fa" tritone-avoidance practice (customary in modes I/II too,
+   * not just V/VI, but there it's occasional/contextual rather than a
+   * blanket signature -- see catholicGregorian.ts's own note on tonus-1/2
+   * and refs/README.md's "Customary B-flat" section). Prefer a per-note
+   * `CadenceNote.accidental` over this flag wherever the source data
+   * supports that finer granularity.
+   */
   hasBFlat?: boolean;
   /** Notes prepended only to the very first colon of a psalm's first verse. */
   intonation?: CadenceNote[];

@@ -184,3 +184,53 @@ useful for transcribing formulas 2-5:
   same way, directly as ABC (fastest and most exact so far), or via the
   spoken-description approach used for tone 1's rough draft if ABC isn't
   convenient at the time.
+
+## Customary B-flat (_musica ficta_) — researched, partially modeled
+
+Not tied to one source document (general chant-theory research, prompted
+by a real false positive in an early draft of `checkModeConsistency`'s own
+test suite — a D-final melody using a B-flat was wrongly asserted to no
+longer be "really" Dorian). Confirmed via web research, not derived:
+
+- **The "mi contra fa" rule**: medieval theory avoided the tritone F–B
+  (_mi contra fa_ — "fa against mi is the devil in music"), and B-flat was
+  the customary fix. Sourced from a standard chant manual: _"Under certain
+  conditions the B was flatted in modes I and II, and occasionally in
+  modes V and VI"_ — i.e. Dorian/Hypodorian (final D) as well as
+  Lydian/Hypolydian (final F, this project's existing `hasBFlat` tones),
+  not only the latter. Sources aren't perfectly consistent on which pair
+  is the more "usual" case, but agree both are real and the chant doesn't
+  stop being that mode when it happens.
+- **Mode III (Phrygian, final E) has a related but separate B-instability**:
+  its naive reciting tone (a 5th above E = B) was historically unstable,
+  resolved three different documented ways across traditions — raised to
+  C (Solesmes — see `catholicGregorian.ts`'s "Solesmes-raised C" comment
+  on tonus-3's reciting tone), kept natural at B (the Kirkkokäsikirja's
+  own choice, already noted there), or flattened to B-flat. This project's
+  tonus-3 data already picked a side (natural B, per the Kirkkokäsikirja);
+  this note is just to record that the underlying "B is a problem note" is
+  the same phenomenon showing up in a different spot, not a new gap.
+
+**Modeled so far**: `antiphon/modeConsistency.ts`'s `checkModeConsistency`
+exempts the B degree from its strict interval-set check specifically for
+the two sourced (root, species) pairs (D-Dorian, F-Lydian) — see its
+`CUSTOMARY_FLEXIBLE_LETTER` table — so a chant mixing B-natural and
+B-flat in those two contexts isn't misclassified as inconsistent or
+reclassified to Aeolian. `catholicGregorian.ts`'s tonus-1/tonus-2 gained a
+note explaining why `hasBFlat` (a blanket, whole-tune flag) is
+deliberately NOT set there even though the practice is real for those
+tones too — the sourced practice is occasional/contextual, and the flag's
+all-or-nothing semantics would overclaim.
+
+**Deferred (TODO)**: everything above is a static, per-species exemption —
+it doesn't model the actual melodic _condition_ that governs when B
+flips (flatten specifically when the phrase approaches/frames F; stay
+natural elsewhere). That needs a properly citable rule for the precise
+trigger, not a derived guess, and then contour-aware checking (looking at
+neighboring notes, not just the overall pitch-class set) rather than a
+blanket per-species exemption. Also unexplored: whether any degree besides
+B has a similarly-documented customary alteration in any mode (this
+project's own tonus-3 reciting-tone history hints there may be more such
+cases worth researching, not just B). Revisit before leaning on
+`checkModeConsistency` for anything more rigorous than a first-pass sanity
+check.

@@ -12,20 +12,40 @@ describe('checkModeConsistency', () => {
     expect(matches[0]).toEqual({ species: 'Dorian', root: { letter: 'D' }, churchMode: 1 });
   });
 
-  it('catches "I thought this was Dorian" when a flat 6th sneaks in: not Dorian, matches D-Aeolian instead with no churchMode', () => {
-    // Dorian's 6th above D is natural B; a Bb here is Dorian's classic
-    // real-world confusion with (natural) minor -- exactly the mistake
-    // described in conversation: landed the final on D assuming Dorian,
-    // but the actual content isn't really Dorian.
-    const matches = checkModeConsistency('X:1\nL:1/4\nK:C\nD E F G A _B A G F E D |]');
-    const species = matches.map((m) => m.species);
-    expect(species).not.toContain('Dorian');
-    expect(species).toContain('Aeolian');
-    // D-Aeolian isn't one of this engine's 6 canonical (natural-final)
-    // pairs (Aeolian's canonical final is A, not D) -- correctly reported
-    // as a real match with no churchMode, not silently forced into one.
-    const aeolian = matches.find((m) => m.species === 'Aeolian')!;
-    expect(aeolian.churchMode).toBeUndefined();
+  it('a D-final melody mixing B-natural and B-flat is still (only) Dorian, not rejected or reclassified', () => {
+    // The "mi contra fa" tritone-avoidance rule: B was customarily
+    // flattened in modes I/II (Dorian) under certain melodic conditions,
+    // without the chant ceasing to be Dorian -- confirmed via real chant
+    // theory sources (see refs/README.md's "Customary B-flat" section).
+    // This melody uses BOTH forms of B and should still match Dorian.
+    // D-Aeolian, notably, does NOT also match: the flexibility exemption
+    // is specific to the two sourced (root, species) pairs, so the B
+    // natural in this melody still strictly rules out Aeolian (whose 6th
+    // degree is flat B only) -- mixing both forms doesn't manufacture a
+    // false ambiguity with a species that was never granted the exemption.
+    const matches = checkModeConsistency('X:1\nL:1/4\nK:C\nD E F G A B _B A G F E D |]');
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toEqual({ species: 'Dorian', root: { letter: 'D' }, churchMode: 1 });
+  });
+
+  it('catches "I thought this was Dorian" when an F# sneaks in: not Dorian, and not saved by the B-flexibility exemption', () => {
+    // A raised 3rd (F# instead of Dorian's minor 3rd, F) isn't any
+    // documented customary Dorian inflection -- the B-flexibility
+    // exemption only ever excuses the B degree specifically, never F.
+    const matches = checkModeConsistency('X:1\nL:1/4\nK:C\nD E ^F G A B A G ^F E D |]');
+    expect(matches.map((m) => m.species)).not.toContain('Dorian');
+  });
+
+  it('extends the same B-flexibility to Lydian (F final), the more usual customary case per the sources', () => {
+    // F Lydian's own 4th degree is B (its famous "raised 4th"); flattening
+    // it is the more commonly documented case of the two -- and flattening
+    // it fully would make the tune indistinguishable from Ionian (see
+    // catholicGregorian.ts's own hasBFlat/mode-11-12 reuse comment), but a
+    // melody that uses BOTH forms should still read as Lydian, not get
+    // rejected or bounced to Ionian-only.
+    const matches = checkModeConsistency('X:1\nL:1/4\nK:C\nF G A B c B _B A G F |]');
+    const lydian = matches.find((m) => m.species === 'Lydian');
+    expect(lydian?.churchMode).toBe(5);
   });
 
   it('recognizes a transposed mode via its key signature: G Dorian (Bb key signature), no churchMode', () => {

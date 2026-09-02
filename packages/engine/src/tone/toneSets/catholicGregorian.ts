@@ -70,6 +70,19 @@ function buildTone(spec: Omit<ToneSpec, 'intonation' | 'flex'>): ToneFormula {
   });
 }
 
+// NOTE on tonus-1/tonus-2's B and hasBFlat: real chant-theory sources
+// confirm B was ALSO customarily flattened in modes I/II under certain
+// melodic conditions (the "mi contra fa" tritone-avoidance rule against
+// F), not only in modes V/VI (hasBFlat, below). `hasBFlat` is deliberately
+// NOT set here, though: it's a whole-tune, always-on flag, and the sourced
+// practice for I/II is occasional/contextual (mixing B-natural and
+// B-flat within the same chant), not a blanket signature the way V/VI's
+// more usual case is. Setting the flag here would overclaim a uniformity
+// the sources don't support. The right fix is per-note accidentals (see
+// tone/types.ts's CadenceNote.accidental) at the SPECIFIC points the
+// source material shows a flat -- which needs a real source to transcribe
+// from, not a guess at placement. See refs/README.md's "Customary B-flat"
+// section for the research and what's deferred.
 const tones: ToneFormula[] = [
   buildTone({
     id: 'tonus-1',
