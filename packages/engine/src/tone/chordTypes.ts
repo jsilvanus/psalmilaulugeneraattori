@@ -1,3 +1,4 @@
+import type { AccentPointOf, CadenceFormulaOf, DifferentiaOf } from './cadence.js';
 import type { Accidental, ScaleDegree } from './types.js';
 
 /**
@@ -26,29 +27,17 @@ export interface ChordCadenceNote {
 }
 
 /**
- * One accent point for a homophonic chordal cadence -- same shape as
- * AccentPoint in types.ts (preparatory/accentNote/postAccent), just
- * chord-valued. Kept as a deliberate, separate mirror of the monophonic
- * types rather than a generic rewrite of them: the two note shapes (one
- * degree vs. four) are different enough that sharing code isn't worth the
- * indirection, and this keeps the existing single-line tone sets
- * completely unaffected.
+ * One accent point for a homophonic chordal cadence -- the same generic
+ * shape as AccentPoint in types.ts (see cadence.ts's AccentPointOf), just
+ * specialized to chord-valued notes instead of single degrees. Both sides
+ * share the one fitting algorithm in fitCore.ts.
  */
-export interface ChordAccentPoint {
-  preparatory: ChordCadenceNote[];
-  accentNote: ChordCadenceNote;
-  postAccent: ChordCadenceNote[];
-}
+export type ChordAccentPoint = AccentPointOf<ChordCadenceNote>;
 
-export interface ChordCadenceFormula extends ChordAccentPoint {
-  /** An earlier accent point -- see CadenceFormula.secondaryAccent in types.ts. */
-  secondaryAccent?: ChordAccentPoint;
-}
+export type ChordCadenceFormula = CadenceFormulaOf<ChordCadenceNote>;
 
-export interface ChordDifferentia extends ChordCadenceFormula {
-  /** Chant-book identifier for this ending (e.g. "1", "2"). */
-  label?: string;
-}
+/** Chordal counterpart of Differentia in types.ts -- see cadence.ts's DifferentiaOf. */
+export type ChordDifferentia = DifferentiaOf<ChordCadenceNote>;
 
 export interface ChordToneFormula {
   id: string;

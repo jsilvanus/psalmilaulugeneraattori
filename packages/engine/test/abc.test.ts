@@ -1,23 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { abcPitch, emitAbc } from '../src/output/abc.js';
 import type { PitchedColon } from '../src/tone/fit.js';
+import { note } from '../src/tone/toneSets/toneBuilders.js';
 
 const cola: PitchedColon[] = [
   {
     role: 'mediant',
     syllables: [
-      { text: 'Di', notes: [4], isWordStart: true },
-      { text: 'xit', notes: [4], isWordStart: false },
-      { text: 'Do', notes: [4], isWordStart: true },
-      { text: 'mi', notes: [3], isWordStart: false },
-      { text: 'nus', notes: [2], isWordStart: false },
+      { text: 'Di', notes: [note(4)], isWordStart: true },
+      { text: 'xit', notes: [note(4)], isWordStart: false },
+      { text: 'Do', notes: [note(4)], isWordStart: true },
+      { text: 'mi', notes: [note(3)], isWordStart: false },
+      { text: 'nus', notes: [note(2)], isWordStart: false },
     ],
   },
   {
     role: 'termination',
     syllables: [
-      { text: 'se', notes: [1], isWordStart: true },
-      { text: 'de', notes: [0], isWordStart: false },
+      { text: 'se', notes: [note(1)], isWordStart: true },
+      { text: 'de', notes: [note(0)], isWordStart: false },
     ],
   },
 ];
@@ -44,7 +45,7 @@ describe('emitAbc', () => {
 
   it('throws for a scale degree outside the supported ABC pitch range', () => {
     const outOfRange: PitchedColon[] = [
-      { role: 'termination', syllables: [{ text: 'x', notes: [50], isWordStart: true }] },
+      { role: 'termination', syllables: [{ text: 'x', notes: [note(50)], isWordStart: true }] },
     ];
     expect(() => emitAbc(outOfRange)).toThrow();
   });
@@ -52,6 +53,17 @@ describe('emitAbc', () => {
   it('emits K:F instead of K:C when the tone has hasBFlat set', () => {
     const out = emitAbc(cola, { hasBFlat: true });
     expect(out.split('\n')[3]).toBe('K:F');
+  });
+
+  it("renders a syllable's own CadenceNote.accidental as an ABC prefix", () => {
+    const withAccidental: PitchedColon[] = [
+      {
+        role: 'termination',
+        syllables: [{ text: 'x', notes: [note(4, 'sharp')], isWordStart: true }],
+      },
+    ];
+    const out = emitAbc(withAccidental);
+    expect(out.split('\n')[4]).toBe('^G, |]');
   });
 });
 

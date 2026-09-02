@@ -1,5 +1,5 @@
 import type { PitchedColon } from '../tone/fit.js';
-import type { ScaleDegree } from '../tone/types.js';
+import type { CadenceNote, ScaleDegree } from '../tone/types.js';
 
 // GABC pitch letters run 'a' (lowest) to 'm' (highest), each one diatonic
 // step apart; the clef then fixes what absolute pitch a letter represents.
@@ -23,8 +23,8 @@ function gabcPitchLetter(degree: ScaleDegree): string {
   return letter;
 }
 
-function emitSyllable(text: string, notes: ScaleDegree[]): string {
-  return `${text}(${notes.map(gabcPitchLetter).join('')})`;
+function emitSyllable(text: string, notes: CadenceNote[]): string {
+  return `${text}(${notes.map((n) => gabcPitchLetter(n.degree)).join('')})`;
 }
 
 const BOUNDARY_MARKER: Record<PitchedColon['role'], string> = {

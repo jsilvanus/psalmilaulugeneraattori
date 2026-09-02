@@ -65,7 +65,7 @@ export function abcPitch(degree: ScaleDegree, accidental?: Accidental): string {
 function emitColonNotes(colon: PitchedColon): string {
   let out = '';
   colon.syllables.forEach((syllable, idx) => {
-    const piece = syllable.notes.map((degree) => abcPitch(degree)).join('');
+    const piece = syllable.notes.map((n) => abcPitch(n.degree, n.accidental)).join('');
     out += idx > 0 && syllable.isWordStart ? ` ${piece}` : piece;
   });
   return out;

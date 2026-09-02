@@ -1,3 +1,5 @@
+import type { AccentPointOf, CadenceFormulaOf, DifferentiaOf } from './cadence.js';
+
 export type ScaleDegree = number;
 
 /**
@@ -17,30 +19,15 @@ export interface CadenceNote {
  * An accent point within a cadence: the note for one stressed syllable,
  * flanked by preparatory notes (just before it) and postAccent notes
  * (trailing unstressed syllables right after it, before the next accent
- * or the reciting tone takes over).
+ * or the reciting tone takes over). See cadence.ts's AccentPointOf -- this
+ * is just that generic shape specialized to single-degree notes; the
+ * chordal (SATB) tradition in chordTypes.ts specializes it to Chord-valued
+ * notes instead, and both sides share the one fitting algorithm in
+ * fitCore.ts.
  */
-export interface AccentPoint {
-  /** Notes for syllables strictly before the accent, closest-to-accent last. */
-  preparatory: CadenceNote[];
-  /** The note on the stressed syllable itself. */
-  accentNote: CadenceNote;
-  /** Notes for the syllables right after this accent, in order. */
-  postAccent: CadenceNote[];
-}
+export type AccentPoint = AccentPointOf<CadenceNote>;
 
-export interface CadenceFormula extends AccentPoint {
-  /**
-   * An earlier accent point, used only when the colon has a second
-   * stressed syllable within the region that would otherwise sit on the
-   * plain reciting tone (i.e. before this accent's own preparatory notes).
-   * Real psalm-tone books -- both Catholic and Finnish -- give some
-   * cadences two accent positions this way, to accommodate verses with an
-   * extra early stress; when the colon has no stressed syllable there, or
-   * the formula doesn't define one, that region just stays on the
-   * reciting tone as usual.
-   */
-  secondaryAccent?: AccentPoint;
-}
+export type CadenceFormula = CadenceFormulaOf<CadenceNote>;
 
 /**
  * One named termination ending. Both the Catholic/Gregorian and Finnish
@@ -51,10 +38,7 @@ export interface CadenceFormula extends AccentPoint {
  * tone JSON (see the web UI's "Custom (JSON)" tone option) isn't forced to
  * name each ending.
  */
-export interface Differentia extends CadenceFormula {
-  /** Chant-book identifier for this ending (e.g. "a", "b", "D"). */
-  label?: string;
-}
+export type Differentia = DifferentiaOf<CadenceNote>;
 
 export type ChurchMode = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 

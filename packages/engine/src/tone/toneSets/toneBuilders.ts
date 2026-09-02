@@ -18,22 +18,34 @@ export function note(degree: ScaleDegree, accidental?: Accidental): CadenceNote 
   return accidental ? { degree, accidental } : { degree };
 }
 
+/**
+ * A cadence-array element: either a plain ScaleDegree (the common case), or
+ * an already-built CadenceNote when that particular note needs an
+ * accidental (mirrors chordBuilders.ts's ChordNoteInput/normalizeChordNote,
+ * the chordal counterpart of this pattern).
+ */
+type CadenceNoteInput = ScaleDegree | CadenceNote;
+
+function normalizeCadenceNote(input: CadenceNoteInput): CadenceNote {
+  return typeof input === 'number' ? note(input) : input;
+}
+
 export function accentPoint(
-  preparatory: ScaleDegree[],
-  accentNote: ScaleDegree,
-  postAccent: ScaleDegree[],
+  preparatory: CadenceNoteInput[],
+  accentNote: CadenceNoteInput,
+  postAccent: CadenceNoteInput[],
 ): AccentPoint {
   return {
-    preparatory: preparatory.map((d) => note(d)),
-    accentNote: note(accentNote),
-    postAccent: postAccent.map((d) => note(d)),
+    preparatory: preparatory.map(normalizeCadenceNote),
+    accentNote: normalizeCadenceNote(accentNote),
+    postAccent: postAccent.map(normalizeCadenceNote),
   };
 }
 
 export function cadence(
-  preparatory: ScaleDegree[],
-  accentNote: ScaleDegree,
-  postAccent: ScaleDegree[],
+  preparatory: CadenceNoteInput[],
+  accentNote: CadenceNoteInput,
+  postAccent: CadenceNoteInput[],
   secondaryAccent?: AccentPoint,
 ): CadenceFormula {
   return { ...accentPoint(preparatory, accentNote, postAccent), secondaryAccent };
@@ -41,9 +53,9 @@ export function cadence(
 
 export function differentia(
   label: string | undefined,
-  preparatory: ScaleDegree[],
-  accentNote: ScaleDegree,
-  postAccent: ScaleDegree[],
+  preparatory: CadenceNoteInput[],
+  accentNote: CadenceNoteInput,
+  postAccent: CadenceNoteInput[],
   secondaryAccent?: AccentPoint,
 ): Differentia {
   return { label, ...cadence(preparatory, accentNote, postAccent, secondaryAccent) };
