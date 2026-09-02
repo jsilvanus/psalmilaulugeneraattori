@@ -82,17 +82,19 @@ tones (5 numbered formulas + 2 worked examples — see next section). Pages
 `finnishOther.ts`) plus SATB variants for tones 8 and 9 (source for
 `finnishOtherChordal.ts`).
 
-### Anglican chant (pp. 387-388): structure confirmed, pitch data not yet transcribed
+### Anglican chant (pp. 387-388): tone 1 transcribed, 2-5 remaining
 
 The engine has a chordal (SATB) data model and fitting pipeline built
 specifically for this (`chordTypes.ts`, `chordBuilders.ts`, `fitChord.ts`,
 `output/abcChord.ts` — proven out already on `finnishOtherChordal.ts`'s
-tones 8/9 SATB variants), but **no `anglicanChant.ts` tone set exists yet**
-— an attempt to extract the 5 formulas' actual pitches programmatically
-(since the project owner was unavailable to dictate them, unlike every
-other tone set here) did not reach a confidence level worth committing as
-real data. What _is_ confirmed, worth preserving so the next attempt (by
-either better tooling or dictation) doesn't have to redo it:
+tones 8/9 SATB variants). `anglicanChant.ts` now has real data for formula
+1 (see its own DATA SOURCE comment) — transcribed by the project owner
+directly as ABC notation (exact, not reconstructed), after an earlier
+attempt to extract it programmatically from the source PDF, and then a
+voice-dictated draft, both fell short of a trustworthy confidence level.
+The ABC source for tone 1 is kept verbatim in `anglicanChant.ts`'s own
+comment; the general findings below (from the earlier attempts) remain
+useful for transcribing formulas 2-5:
 
 - **Single vs. double chant**: formulas 1-4 are single chants (one
   grand-staff system, i.e. one mediant+termination pair reused every
@@ -106,20 +108,17 @@ either better tooling or dictation) doesn't have to redo it:
   two linked strains (two `ChordToneFormula`s, alternated by the
   verse-fitting caller) rather than extending `ColonRole`.
 - **Pointing convention**, confirmed both from the book's own prose (p. 387) and empirically from "esimerkki 1"'s real text underlay
-  (`Palvelkaa hän-tä iloiten, tulkaa hä-nen eteen-sä riemuiten.`): each
-  half (mediant/termination) is **[reciting chord, absorbing every leading
-  unstressed syllable] + [N preparatory chords, from any preceding
-  half-note pairs] + [a final cadence chord (or two) carrying the colon's
-  last stressed syllable, plus up to two more trailing unstressed
-  syllables]**. The final cadence is written EITHER as a single whole note
-  (then all of the accent + trailing syllables share that one chord --
-  formula 5/esimerkki 1's `iloiten,` and `riemuiten.`) OR as a pair of half
-  notes (then the accent lands on the first of the pair and the last
-  trailing syllable on the second -- formulas 1-4's mediants, e.g. formula
-  1's, end this way with no separate final whole note at all: read the
-  whole cadence there as `preparatory: []`, `accentNote` = the first half
-  note, `postAccent: [the second half note]`, not as two more preparatory
-  notes).
+  (`Palvelkaa hän-tä iloiten, tulkaa hä-nen eteen-sä riemuiten.`) and from
+  formula 1's own barlines (see `anglicanChant.ts`): each half
+  (mediant/termination) is **[reciting whole note, absorbing every leading
+  unstressed syllable] + [N preparatory half notes] + [a final whole note
+  carrying the colon's last stressed syllable, plus up to two more
+  trailing unstressed syllables]**. (An earlier, less certain read of
+  formula 1 guessed its mediant ends directly in a half-note pair with no
+  separate final whole note -- formula 1's real ABC source shows that's
+  wrong: it has the same [recit]+[2 prep]+[final] / [recit]+[4 prep]+[final]
+  shape as formula 5. Whether any formula genuinely omits the final whole
+  note isn't confirmed either way yet.)
   **The exact overflow rule for the "up to two trailing syllables" case is
   the one real correction this needed**, quoted almost verbatim from the
   book (p. 387): _"If three syllables (one accented and two unaccented)
@@ -136,34 +135,41 @@ either better tooling or dictation) doesn't have to redo it:
   `fit.ts`, since the book's own Gregorian-section prose doesn't describe
   this rule and `fit.ts`'s "repeat the last postAccent degree" behaviour
   is already established, tested, and used by all the committed Gregorian
-  data. For formula 5 specifically: N=2 preparatory chords for the
-  mediant, N=4 for the termination (read off "esimerkki 1"'s
-  syllable-to-chord alignment), each ending in a genuine separate final
-  whole note.
-- **One spot-confirmed data point** (formula 5 / esimerkki 1's very first
-  chord, the mediant's reciting chord): soprano B4, alto G4 (both sit
-  exactly on staff lines — treble clef, key signature one sharp/G major),
-  tenor and bass close to D3/C3.
-- **What was tried and didn't reach a committable confidence level**:
-  (a) reading the embedded font's text/glyph codes directly — the
-  `capella` font's glyphs are Private Use Area codepoints keyed to
-  specific noteheads, but `pdftotext -bbox`'s reported glyph bounding
-  boxes are padded to a constant per-glyph height that doesn't track
-  pitch, and adjacent glyphs sometimes get merged into one "word",
-  losing per-notehead resolution; (b) connected-component notehead
-  detection on 600dpi renders (erasing the detected staff-line rows first
-  so they stop merging every symbol into one blob) — works well for some
-  chords (clean integer line/space readings) but noisy for others,
-  likely from touching ink between adjacent voices/accidentals/stems;
-  (c) direct visual reading of zoomed crops — reliable for isolated
-  chords sitting cleanly on staff lines (see the one confirmed data point
-  above), but not fast or reliable enough across all ~18 chords across
-  formula 5's two strains (let alone formulas 1-4) to trust without the
-  project owner's own eyes on it.
-- **Recommended next step**: now that the pointing convention is fully
-  understood, the fastest reliable path is very likely the project owner
-  dictating the 5 formulas the same way they dictated `finnishOtherChordal.ts`'s
-  tune 8/9 SATB variants (bare note letters per voice, case for the
-  reciting marker, `(lower)` for octave drops) — now shorter than before
-  since only the reciting chord + N prep chords + final chord need
-  stating per half, not a full syllable-by-syllable figure.
+  data. For formula 5: N=2 preparatory chords for the mediant, N=4 for the
+  termination (read off "esimerkki 1"'s syllable-to-chord alignment). For
+  formula 1 (now transcribed): the same N=2/N=4 shape exactly.
+- **What was tried and didn't reach a committable confidence level, before
+  the project owner just wrote out the ABC directly**: (a) reading the
+  embedded font's text/glyph codes directly — the `capella` font's glyphs
+  are Private Use Area codepoints keyed to specific noteheads, but
+  `pdftotext -bbox`'s reported glyph bounding boxes are padded to a
+  constant per-glyph height that doesn't track pitch, and adjacent glyphs
+  sometimes get merged into one "word", losing per-notehead resolution;
+  (b) connected-component notehead detection on 600dpi renders (erasing
+  the detected staff-line rows first so they stop merging every symbol
+  into one blob) — works well for some chords (clean integer line/space
+  readings) but noisy for others, likely from touching ink between
+  adjacent voices/accidentals/stems; (c) direct visual reading of zoomed
+  crops — reliable for isolated chords sitting cleanly on staff lines, but
+  not fast or reliable enough across a whole formula to trust without the
+  project owner's own eyes on it; (d) voice dictation (spoken description
+  of each chord's staff position, transcribed to text) — got most of a
+  formula right but garbled one chord badly enough to need a re-check, and
+  still needed real music-theory judgment (nearest-neighbour octave
+  placement, no-crossing constraints) to turn into absolute pitches.
+- **What worked**: the project owner writing the tone out directly as ABC
+  notation (see `anglicanChant.ts`'s DATA SOURCE comment for tone 1's
+  source verbatim) — exact, no reconstruction needed. One real gotcha:
+  the source uses `clef=treble-8` for the two upper (soprano/alto) voices,
+  which turned out to be purely an engraving choice (so those voices fit
+  legibly on a treble-shaped staff), not an actual extra octave
+  transposition to apply when computing scale degrees — confirmed by
+  checking that only the "read literally, no -8 shift" interpretation
+  keeps every voice non-crossing (soprano >= alto >= tenor >= bass) across
+  all 10 chords; the other reading puts alto below tenor repeatedly, which
+  doesn't happen in genuine four-part harmony. Worth checking again if
+  formulas 2-5 use the same `clef=treble-8` convention.
+- **Recommended next step**: the project owner dictating formulas 2-5 the
+  same way, directly as ABC (fastest and most exact so far), or via the
+  spoken-description approach used for tone 1's rough draft if ABC isn't
+  convenient at the time.

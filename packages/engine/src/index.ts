@@ -14,6 +14,7 @@ export { catholicGregorianToneSet } from './tone/toneSets/catholicGregorian.js';
 export { finnishGregorianToneSet } from './tone/toneSets/finnishGregorian.js';
 export { finnishOtherToneSet, getFinnishOtherTone } from './tone/toneSets/finnishOther.js';
 export { finnishOtherChordalToneSet } from './tone/toneSets/finnishOtherChordal.js';
+export { anglicanChantToneSet } from './tone/toneSets/anglicanChant.js';
 
 export * from './output/gabc.js';
 export * from './output/abc.js';
