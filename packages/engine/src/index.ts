@@ -22,3 +22,4 @@ export * from './output/abcChord.js';
 
 export * from './antiphon/modeDetect.js';
 export * from './antiphon/toneMatch.js';
+export * from './antiphon/modeConsistency.js';
