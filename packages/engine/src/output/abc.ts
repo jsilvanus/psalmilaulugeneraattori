@@ -54,18 +54,22 @@ const ACCIDENTAL_PREFIX: Record<Accidental, string> = {
 // `accidental`, when given, prefixes the standard ABC symbol (^/_/=) ahead
 // of the pitch token -- for a note that needs marking beyond whatever the
 // tune's own key signature (see emitAbc's `hasBFlat`) already implies.
-export function abcPitch(degree: ScaleDegree, accidental?: Accidental): string {
+// `dotted`, when true, appends ABC's `3/2` length multiplier -- the note's
+// duration extended by half, mirroring the source's mora dot (see
+// CadenceNote.dotted).
+export function abcPitch(degree: ScaleDegree, accidental?: Accidental, dotted?: boolean): string {
   const token = ABC_STEPS[FINAL_INDEX + degree];
   if (token === undefined) {
     throw new Error(`Scale degree ${degree} is out of the supported ABC pitch range.`);
   }
-  return accidental ? `${ACCIDENTAL_PREFIX[accidental]}${token}` : token;
+  const pitch = accidental ? `${ACCIDENTAL_PREFIX[accidental]}${token}` : token;
+  return dotted ? `${pitch}3/2` : pitch;
 }
 
 function emitColonNotes(colon: PitchedColon): string {
   let out = '';
   colon.syllables.forEach((syllable, idx) => {
-    const piece = syllable.notes.map((n) => abcPitch(n.degree, n.accidental)).join('');
+    const piece = syllable.notes.map((n) => abcPitch(n.degree, n.accidental, n.dotted)).join('');
     out += idx > 0 && syllable.isWordStart ? ` ${piece}` : piece;
   });
   return out;

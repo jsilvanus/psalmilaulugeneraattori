@@ -24,8 +24,12 @@ marks the accented (stressed-syllable) note, an optional trailing `r`
 marks an "open" (elidable/reciting-tone) notehead, and the token's pitch
 letters are its GABC pitch alphabet characters (a-m, case-insensitive --
 uppercase is jgabc's own scale-run ligature convention, same pitch meaning)
-with non-pitch modifier characters (x = oriscus, v = ligature marker, . =
-mora dot) stripped.
+with non-pitch modifier characters (x = oriscus, v = ligature marker)
+stripped. A trailing `.`/`..` (mora/augmentation dot) is reported
+separately via `final_note_dotted` below, rather than stripped outright --
+in every formula transcribed so far it falls on the string's very last
+pitch, matching the Solesmes convention of holding a cadence's final note;
+mark that array position with toneBuilders.ts's `dot()` when transcribing.
 
 CADENCE EXTRACTION RULE: within a formula, the LAST accented token is the
 structural accentNote (its first pitch); any pitches after it in that same
@@ -82,6 +86,11 @@ def reciting_letter_of(formula_str):
 
     c = Counter(t["pitches"][-1] for t in opens)
     return c.most_common(1)[0][0]
+
+
+def final_note_dotted(formula_str):
+    """Whether the formula string's very last note carries a mora dot."""
+    return formula_str.rstrip().endswith(".")
 
 
 def parse_cadence(formula_str, final_letter):
@@ -171,9 +180,16 @@ def build_tone(name, data):
         "final_letter": final_letter,
         "reciting_letter": reciting_letter,
         "reciting_degree": letter_degree(reciting_letter, final_letter),
-        "mediant": parse_cadence(data["mediant"], final_letter),
+        "mediant": {
+            **parse_cadence(data["mediant"], final_letter),
+            "final_note_dotted": final_note_dotted(data["mediant"]),
+        },
         "terminations": [
-            {"label": label, **parse_cadence(s, final_letter)}
+            {
+                "label": label,
+                **parse_cadence(s, final_letter),
+                "final_note_dotted": final_note_dotted(s),
+            }
             for label, s in data["terminations"].items()
         ],
     }

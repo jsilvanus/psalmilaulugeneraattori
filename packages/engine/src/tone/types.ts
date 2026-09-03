@@ -13,6 +13,14 @@ export interface CadenceNote {
   degree: ScaleDegree;
   /** Only set where a note needs an accidental beyond the tune's key signature. */
   accidental?: Accidental;
+  /**
+   * Whether this note carries an augmentation ("mora") dot -- extends its
+   * duration by half, per the Solesmes convention of holding a cadence's
+   * final note. Only set where a tradition's source material marks it
+   * explicitly (see catholicGregorian.ts's DATA SOURCE comment); absent
+   * elsewhere, not a guess.
+   */
+  dotted?: boolean;
 }
 
 /**
