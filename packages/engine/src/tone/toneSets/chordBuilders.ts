@@ -73,6 +73,8 @@ export interface ChordToneSpec {
   flex?: ChordCadenceFormula;
   mediant: ChordCadenceFormula;
   termination: ChordDifferentia[];
+  /** Double-chant link -- see ChordToneFormula.nextStrain. */
+  nextStrain?: string;
 }
 
 export function buildChordTone(spec: ChordToneSpec): ChordToneFormula {
@@ -85,5 +87,6 @@ export function buildChordTone(spec: ChordToneSpec): ChordToneFormula {
     flex: spec.flex,
     mediant: spec.mediant,
     termination: spec.termination,
+    nextStrain: spec.nextStrain,
   };
 }

@@ -82,31 +82,48 @@ tones (5 numbered formulas + 2 worked examples — see next section). Pages
 `finnishOther.ts`) plus SATB variants for tones 8 and 9 (source for
 `finnishOtherChordal.ts`).
 
-### Anglican chant (pp. 387-388): tone 1 transcribed, 2-5 remaining
+### Anglican chant (pp. 387-388): all 5 formulas transcribed
 
 The engine has a chordal (SATB) data model and fitting pipeline built
 specifically for this (`chordTypes.ts`, `chordBuilders.ts`, `fitChord.ts`,
 `output/abcChord.ts` — proven out already on `finnishOtherChordal.ts`'s
-tones 8/9 SATB variants). `anglicanChant.ts` now has real data for formula
-1 (see its own DATA SOURCE comment) — transcribed by the project owner
-directly as ABC notation (exact, not reconstructed), after an earlier
-attempt to extract it programmatically from the source PDF, and then a
-voice-dictated draft, both fell short of a trustworthy confidence level.
-The ABC source for tone 1 is kept verbatim in `anglicanChant.ts`'s own
-comment; the general findings below (from the earlier attempts) remain
-useful for transcribing formulas 2-5:
+tones 8/9 SATB variants). `anglicanChant.ts` now has real data for **all
+five formulas** (see its own DATA SOURCE comment) — transcribed by the
+project owner directly as ABC notation (exact, not reconstructed), after an
+earlier attempt to extract them programmatically from the source PDF, and
+then a voice-dictated draft, both fell short of a trustworthy confidence
+level. Every formula's ABC is kept verbatim in `anglicanChant.ts`'s own
+comment, which is the authoritative record: it preserves detail the
+homophonic `Chord` model cannot (see "passing notes" below).
 
 - **Single vs. double chant**: formulas 1-4 are single chants (one
   grand-staff system, i.e. one mediant+termination pair reused every
   verse). Formula 5 is a **double chant** (two systems/strains, used
-  alternately across two consecutive verses) — confirmed by cross-checking
-  against "esimerkki 1" (uses formula 5's first strain alone, i.e. formula
-  5 used as a single chant for one verse) and "esimerkki 2" (uses _both_
-  of formula 5's strains, one per verse, with real underlaid text). A
-  double chant doesn't fit the engine's existing bipartite (mediant +
-  termination) `ColonRole` shape as one `ChordToneFormula` — model it as
-  two linked strains (two `ChordToneFormula`s, alternated by the
-  verse-fitting caller) rather than extending `ColonRole`.
+  alternately across two consecutive verses) — originally inferred by
+  cross-checking against "esimerkki 1" (uses formula 5's first strain
+  alone, i.e. formula 5 used as a single chant for one verse) and
+  "esimerkki 2" (uses _both_ of formula 5's strains, one per verse, with
+  real underlaid text), and **since confirmed** by the transcribed source
+  itself having two systems. Modelled as predicted: two linked
+  `ChordToneFormula`s (`anglican-5a`/`anglican-5b`, joined by the new
+  `ChordToneFormula.nextStrain` field) rather than by extending
+  `ColonRole`, since the alternation runs _across_ verses while
+  `ColonRole` describes parts _within_ one. Note that nothing consumes
+  `nextStrain` yet — `fitChordVerse` fits one verse at a time and has no
+  notion of verse parity, so alternating strains is still the caller's
+  job. General Anglican practice for the awkward cases, if that gets
+  built: an odd verse count repeats the chant's second half at a suitable
+  point (often marked "2nd part" in printed pointing), and the Gloria
+  Patri is itself two verses long, so it sits on a double chant as one
+  complete A+B cycle.
+- **Passing notes**: six notes across formulas 2, 4 and 5 don't begin on a
+  chord position — short steps decorating the move out of one chord into
+  the next. The `Chord` model is strictly homophonic (four voices moving
+  together, one chord per syllable) and cannot represent one voice
+  subdividing against the others, so the encoded chords take each voice's
+  principal note and drop the passing notes. Documented per-formula in
+  `anglicanChant.ts`; the verbatim ABC there retains them, so a future
+  emitter that models per-voice melisma can recover them.
 - **Pointing convention**, confirmed both from the book's own prose (p. 387) and empirically from "esimerkki 1"'s real text underlay
   (`Palvelkaa hän-tä iloiten, tulkaa hä-nen eteen-sä riemuiten.`) and from
   formula 1's own barlines (see `anglicanChant.ts`): each half
@@ -164,26 +181,33 @@ useful for transcribing formulas 2-5:
   `ToneFormula.hasBFlat`/`AbcMeta.hasBFlat` similarly now actually switches
   the ABC header to `K:F` instead of sitting inert. GABC output still
   doesn't render either, deliberately — see `output/gabc.ts`'s own note.
-  `anglicanChant.ts`'s one real individual accidental (the source's `^d,4`
-  on the alto voice) is now encoded this way; see its DATA SOURCE comment
-  for why the matching `=d,8` resolution isn't (a courtesy natural on a
-  reused reciting chord, not a real accidental).
-- **What worked**: the project owner writing the tone out directly as ABC
-  notation (see `anglicanChant.ts`'s DATA SOURCE comment for tone 1's
-  source verbatim) — exact, no reconstruction needed. One real gotcha:
-  the source uses `clef=treble-8` for the two upper (soprano/alto) voices,
-  which turned out to be purely an engraving choice (so those voices fit
-  legibly on a treble-shaped staff), not an actual extra octave
+  `anglicanChant.ts`'s real individual accidentals (six across formulas 1
+  and 5) are now encoded this way; see its DATA SOURCE comment for why
+  formula 1's matching `=d,8` resolution isn't (a courtesy natural on a
+  reused reciting chord, not a real accidental). Formulas 2, 3 and 4 write
+  no individual accidentals at all.
+- **What worked**: the project owner writing the tones out directly as ABC
+  notation (see `anglicanChant.ts`'s DATA SOURCE comment for every
+  formula's source verbatim) — exact, no reconstruction needed. One real
+  gotcha: the source uses `clef=treble-8` for the two upper (soprano/alto)
+  voices, which turned out to be purely an engraving choice (so those
+  voices fit legibly on a treble-shaped staff), not an actual extra octave
   transposition to apply when computing scale degrees — confirmed by
   checking that only the "read literally, no -8 shift" interpretation
-  keeps every voice non-crossing (soprano >= alto >= tenor >= bass) across
-  all 10 chords; the other reading puts alto below tenor repeatedly, which
-  doesn't happen in genuine four-part harmony. Worth checking again if
-  formulas 2-5 use the same `clef=treble-8` convention.
-- **Recommended next step**: the project owner dictating formulas 2-5 the
-  same way, directly as ABC (fastest and most exact so far), or via the
-  spoken-description approach used for tone 1's rough draft if ABC isn't
-  convenient at the time.
+  keeps every voice non-crossing (soprano >= alto >= tenor >= bass). Now
+  verified across **all five** formulas: the literal reading crosses
+  nowhere, while the alternative crosses at 9 or 10 of each formula's 10
+  chords.
+- **One method note worth keeping**: chord positions must be taken from
+  the pointing's own metrical grid, not from any single voice. Formula 5's
+  first strain has the _soprano_ in dotted rhythm while the lower three
+  voices articulate the beat, so deriving positions from the soprano
+  misaligns that strain; the other formulas happen not to expose this
+  because their soprano is regular. Degrees are normalised per tune
+  (lowest note = 0), except that formula 5's two strains share one shift,
+  since they are one chant. A useful cross-check fell out of that: strain
+  2's final chord then comes out identical to strain 1's opening chord, so
+  the cycle closes where it began.
 
 ## Customary B-flat (_musica ficta_) — researched, partially modeled
 

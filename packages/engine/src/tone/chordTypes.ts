@@ -49,6 +49,24 @@ export interface ChordToneFormula {
   flex?: ChordCadenceFormula;
   mediant: ChordCadenceFormula;
   termination: ChordDifferentia[];
+  /**
+   * For a DOUBLE chant: the id of the strain to sing on the FOLLOWING verse.
+   * A double chant is twice the length of a single one, its music repeating
+   * every *pair* of verses -- verse 1 takes strain A, verse 2 strain B,
+   * verse 3 strain A again (see refs/README.md's "Anglican chant" section).
+   * Each strain is a complete, ordinary ChordToneFormula in its own right;
+   * this field is only the link that closes the cycle (A -> B -> A), which
+   * would otherwise exist nowhere in the data and leave two halves of one
+   * chant looking like two unrelated tones.
+   *
+   * Undefined for a single chant, which simply repeats every verse.
+   *
+   * NOTE: nothing consumes this yet -- fitChordVerse fits one verse at a
+   * time and has no notion of verse parity, so alternating between strains
+   * is currently the caller's job. The field records the fact so it isn't
+   * lost; wiring it into verse fitting is separate, unbuilt work.
+   */
+  nextStrain?: string;
 }
 
 /** A named collection of ChordToneFormulas -- the chordal counterpart of ToneSet in types.ts. */
