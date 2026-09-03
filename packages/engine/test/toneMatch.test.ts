@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { matchTone } from '../src/antiphon/toneMatch.js';
 import { catholicGregorianToneSet } from '../src/tone/toneSets/catholicGregorian.js';
-import type { ToneSet } from '../src/tone/types.js';
+import type { ToneSet, ChurchMode } from '../src/tone/types.js';
 import type { MelodyAnalysis } from '../src/antiphon/modeDetect.js';
 
 function analysis(overrides: Partial<MelodyAnalysis>): MelodyAnalysis {
@@ -79,5 +79,21 @@ describe('matchTone', () => {
     expect(result.differentiaIndex).toBe(0);
     expect(result.alternates.map((a) => a.differentiaIndex)).toEqual([1, 2]);
     expect(result.alternates.map((a) => a.distance)).toEqual([1, 2]);
+  });
+});
+
+describe("catholicGregorianToneSet.defaultToneForMode (Glarean's modes 9-12)", () => {
+  it('reuses tone 5/6 (hasBFlat) for Ionian/Hypoionian (modes 11/12), a genuine sourced equivalence', () => {
+    expect(catholicGregorianToneSet.defaultToneForMode(11).id).toBe('tonus-5');
+    expect(catholicGregorianToneSet.defaultToneForMode(12).id).toBe('tonus-6');
+    expect(catholicGregorianToneSet.defaultToneForMode(11).hasBFlat).toBe(true);
+    expect(catholicGregorianToneSet.defaultToneForMode(12).hasBFlat).toBe(true);
+  });
+
+  it('throws for Aeolian/Hypoaeolian (modes 9/10): no tone among 1-8 is a genuine equivalent', () => {
+    const aeolianModes: ChurchMode[] = [9, 10];
+    for (const mode of aeolianModes) {
+      expect(() => catholicGregorianToneSet.defaultToneForMode(mode)).toThrow();
+    }
   });
 });

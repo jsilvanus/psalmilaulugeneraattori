@@ -1,7 +1,13 @@
 import type { ToneSet } from '../types.js';
 import { catholicGregorianToneSet } from './catholicGregorian.js';
+import { finnishGregorianToneSet } from './finnishGregorian.js';
+import { finnishOtherToneSet } from './finnishOther.js';
 
-const registry = new Map<string, ToneSet>([[catholicGregorianToneSet.id, catholicGregorianToneSet]]);
+const registry = new Map<string, ToneSet>([
+  [catholicGregorianToneSet.id, catholicGregorianToneSet],
+  [finnishGregorianToneSet.id, finnishGregorianToneSet],
+  [finnishOtherToneSet.id, finnishOtherToneSet],
+]);
 
 /**
  * Registers a new tone set (e.g. a future Finnish Lutheran set, or a custom

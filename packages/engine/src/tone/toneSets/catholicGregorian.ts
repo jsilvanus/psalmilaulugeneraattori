@@ -1,4 +1,12 @@
-import type { CadenceFormula, Differentia, ScaleDegree, ToneFormula, ToneSet } from '../types.js';
+import type { CadenceFormula, ScaleDegree, ToneFormula, ToneSet } from '../types.js';
+import {
+  accentPoint,
+  buildTone as buildToneBase,
+  cadence,
+  differentia,
+  note,
+} from './toneBuilders.js';
+import type { ToneSpec } from './toneBuilders.js';
 
 /*
  * DATA SOURCE:
@@ -35,6 +43,11 @@ import type { CadenceFormula, Differentia, ScaleDegree, ToneFormula, ToneSet } f
  * respectively) -- both matched precisely, giving good confidence in the
  * conversion method.
  *
+ * Some tones' cadences have two accented tokens in jgabc's data (e.g. Tonus
+ * I's mediant: "f gh hr 'ixi hr 'g hr h."), used when the colon has an
+ * earlier stressed syllable too -- captured here via `secondaryAccent` (see
+ * tone/types.ts), not dropped.
+ *
  * NOT YET SOURCED from Liber Usualis: `intonation` (only the very first
  * colon of a psalm's first verse) and `flex` (only tripartite verses) are
  * still a structural placeholder scaled to each tone's reciting note --
@@ -43,68 +56,39 @@ import type { CadenceFormula, Differentia, ScaleDegree, ToneFormula, ToneSet } f
  * before relying on this for actual liturgical performance.
  */
 
-function note(degree: ScaleDegree): { degree: ScaleDegree } {
-  return { degree };
-}
-
-function cadence(
-  preparatory: ScaleDegree[],
-  accentNote: ScaleDegree,
-  postAccent: ScaleDegree[],
-): CadenceFormula {
-  return {
-    preparatory: preparatory.map(note),
-    accentNote: note(accentNote),
-    postAccent: postAccent.map(note),
-  };
-}
-
-function differentia(
-  label: string | undefined,
-  preparatory: ScaleDegree[],
-  accentNote: ScaleDegree,
-  postAccent: ScaleDegree[],
-): Differentia {
-  return { label, ...cadence(preparatory, accentNote, postAccent) };
-}
-
 // Placeholder (not yet sourced from Liber Usualis -- see DATA SOURCE note above).
 function genericFlex(reciting: ScaleDegree): CadenceFormula {
   return { preparatory: [], accentNote: note(reciting - 1), postAccent: [] };
 }
 
-interface ToneSpec {
-  id: string;
-  name: string;
-  reciting: ScaleDegree;
-  secondReciting?: ScaleDegree;
-  hasBFlat?: boolean;
-  mediant: CadenceFormula;
-  termination: Differentia[];
-}
-
-function buildTone(spec: ToneSpec): ToneFormula {
-  return {
-    id: spec.id,
-    name: spec.name,
-    final: 0,
-    reciting: spec.reciting,
-    secondReciting: spec.secondReciting,
-    hasBFlat: spec.hasBFlat,
+function buildTone(spec: Omit<ToneSpec, 'intonation' | 'flex'>): ToneFormula {
+  return buildToneBase({
+    ...spec,
     // Not yet sourced from Liber Usualis -- see DATA SOURCE note above.
-    intonation: [note(spec.reciting - 2), note(spec.reciting - 1)],
+    intonation: [spec.reciting - 2, spec.reciting - 1],
     flex: genericFlex(spec.reciting),
-    mediant: spec.mediant,
-    termination: spec.termination,
-  };
+  });
 }
 
+// NOTE on tonus-1/tonus-2's B and hasBFlat: real chant-theory sources
+// confirm B was ALSO customarily flattened in modes I/II under certain
+// melodic conditions (the "mi contra fa" tritone-avoidance rule against
+// F), not only in modes V/VI (hasBFlat, below). `hasBFlat` is deliberately
+// NOT set here, though: it's a whole-tune, always-on flag, and the sourced
+// practice for I/II is occasional/contextual (mixing B-natural and
+// B-flat within the same chant), not a blanket signature the way V/VI's
+// more usual case is. Setting the flag here would overclaim a uniformity
+// the sources don't support. The right fix is per-note accidentals (see
+// tone/types.ts's CadenceNote.accidental) at the SPECIFIC points the
+// source material shows a flat -- which needs a real source to transcribe
+// from, not a guess at placement. See refs/README.md's "Customary B-flat"
+// section for the research and what's deferred.
 const tones: ToneFormula[] = [
   buildTone({
     id: 'tonus-1',
     name: 'Tonus I',
     reciting: 4,
-    mediant: cadence([], 3, [4, 4]),
+    mediant: cadence([], 3, [4, 4], accentPoint([], 5, [5, 4])),
     termination: [
       differentia('D', [3, 2], 3, [4, 3, 3, 2, 1, 0]),
       differentia('D2', [], 3, [2, 0]),
@@ -128,7 +112,7 @@ const tones: ToneFormula[] = [
     id: 'tonus-3',
     name: 'Tonus III',
     reciting: 1,
-    mediant: cadence([], 0, [-1, 1]),
+    mediant: cadence([], 0, [-1, 1], accentPoint([], 2, [1, 1])),
     termination: [
       differentia('b', [-1], 1, [1, 0]),
       differentia('a', [-1], 1, [1, 0, -1]),
@@ -150,27 +134,27 @@ const tones: ToneFormula[] = [
     reciting: 2,
     hasBFlat: true,
     mediant: cadence([], 3, [2, 2]),
-    termination: [differentia(undefined, [], 2, [0, 0])],
+    termination: [differentia(undefined, [], 2, [0, 0], accentPoint([], 3, [1]))],
   }),
   buildTone({
     id: 'tonus-6',
     name: 'Tonus VI',
     reciting: 2,
     hasBFlat: true,
-    mediant: cadence([], 1, [2, 2]),
+    mediant: cadence([], 1, [2, 2], accentPoint([], 3, [3, 2])),
     termination: [differentia(undefined, [0, 1, 2], 1, [0, 0])],
   }),
   buildTone({
     id: 'tonus-7',
     name: 'Tonus VII',
     reciting: 4,
-    mediant: cadence([], 3, [4, 4]),
+    mediant: cadence([], 3, [4, 4], accentPoint([], 5, [4])),
     termination: [
-      differentia('a', [], 2, [2, 1, 0]),
-      differentia('b', [], 2, [2, 1]),
-      differentia('c', [], 2, [2, 1, 2]),
-      differentia('c2', [], 2, [2, 3, 2]),
-      differentia('d', [], 2, [2, 1, 3]),
+      differentia('a', [], 2, [2, 1, 0], accentPoint([], 4, [3])),
+      differentia('b', [], 2, [2, 1], accentPoint([], 4, [3])),
+      differentia('c', [], 2, [2, 1, 2], accentPoint([], 4, [3])),
+      differentia('c2', [], 2, [2, 3, 2], accentPoint([], 4, [3])),
+      differentia('d', [], 2, [2, 1, 3], accentPoint([], 4, [3])),
     ],
   }),
   buildTone({
@@ -200,7 +184,18 @@ export const catholicGregorianToneSet: ToneSet = {
   name: 'Catholic / Gregorian (Solesmes)',
   tones: [...tones, tonusPeregrinus],
   defaultToneForMode(mode) {
-    const tone = this.tones.find((t) => t.id === `tonus-${mode}`);
+    // Modes 11/12 (Ionian/Hypoionian, Glarean's 1547 additions -- see
+    // types.ts's ChurchMode doc comment) aren't separately transcribed:
+    // Tone 5/6 (Lydian/Hypolydian) WITH the customary B-flat already has
+    // this engine's Ionian interval pattern exactly (that's what hasBFlat
+    // marks below), so they're reused directly rather than duplicated.
+    // Modes 9/10 (Aeolian/Hypoaeolian) have no such equivalent among 1-8 --
+    // no single customary accidental turns any of them into natural minor
+    // -- and no sourced psalm-tone cadence data exists to transcribe for
+    // them either, so they fall through to the same "not found" error
+    // rather than guessing at an approximation.
+    const effectiveMode = mode === 11 ? 5 : mode === 12 ? 6 : mode;
+    const tone = this.tones.find((t) => t.id === `tonus-${effectiveMode}`);
     if (!tone) throw new Error(`No default tone for mode ${mode} in tone set "${this.id}".`);
     return tone;
   },

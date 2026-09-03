@@ -1,5 +1,6 @@
 import { parseOnly } from 'abcjs';
-import type { ChurchMode } from '../tone/types.js';
+import type { AccidentalName } from 'abcjs';
+import type { Accidental, ChurchMode } from '../tone/types.js';
 
 export interface MelodyAnalysis {
   firstPitch: number;
@@ -10,26 +11,69 @@ export interface MelodyAnalysis {
   mostFrequentPitch: number;
 }
 
-function collectPitches(abcText: string): number[] {
+export interface AbcNoteEvent {
+  /** Bare diatonic letter (octave marks and accidental prefix stripped), uppercase. */
+  letter: string;
+  /** This note's own diatonic pitch -- the same step-count convention MelodyAnalysis uses. */
+  pitch: number;
+  /** The accidental actually written on this specific note, if any. */
+  explicitAccidental?: Accidental;
+  /** The enclosing staff's key-signature accidental for this letter, if the signature alters it. */
+  keySignatureAccidental?: Accidental;
+}
+
+// This engine's own Accidental type only covers sharp/flat/natural (the
+// only ones any diatonic mode -- or any tone/chord data in this project --
+// ever needs); a double sharp/flat or quarter-tone is real ABC syntax but
+// outside what a 7-note diatonic mode can represent, so it's rejected
+// explicitly rather than silently mishandled.
+function toAccidental(name: AccidentalName): Accidental {
+  if (name === 'sharp' || name === 'flat' || name === 'natural') return name;
+  throw new Error(
+    `Accidental "${name}" (double sharp/flat or quarter-tone) is outside the diatonic modes this engine models.`,
+  );
+}
+
+/**
+ * Walks a parsed ABC tune's note events, pairing each with its own bare
+ * letter, explicit accidental, and its staff's key-signature accidental for
+ * that letter -- shared by collectPitches below (which only needs the bare
+ * diatonic pitch) and modeConsistency.ts's checkModeConsistency (which also
+ * needs the accidental/key information to resolve true sounding pitches).
+ */
+export function* walkAbcNotes(abcText: string): Generator<AbcNoteEvent> {
   const tunes = parseOnly(abcText);
   const tune = tunes[0];
   if (!tune) {
     throw new Error('Could not parse the ABC melody.');
   }
 
-  const pitches: number[] = [];
   for (const line of tune.lines) {
     for (const staff of line.staff ?? []) {
+      const keyAccidentals = new Map<string, Accidental>();
+      for (const acc of staff.key?.accidentals ?? []) {
+        keyAccidentals.set(acc.note.toUpperCase(), toAccidental(acc.acc));
+      }
       for (const voice of staff.voices ?? []) {
         for (const item of voice) {
           if (item.el_type === 'note' && item.pitches && item.pitches.length > 0) {
-            pitches.push(item.pitches[0]!.pitch);
+            const p = item.pitches[0]!;
+            const letter = p.name.replace(/[^A-Ga-g]/g, '').toUpperCase();
+            yield {
+              letter,
+              pitch: p.pitch,
+              explicitAccidental: p.accidental ? toAccidental(p.accidental) : undefined,
+              keySignatureAccidental: keyAccidentals.get(letter),
+            };
           }
         }
       }
     }
   }
-  return pitches;
+}
+
+function collectPitches(abcText: string): number[] {
+  return Array.from(walkAbcNotes(abcText), (e) => e.pitch);
 }
 
 function summarizePitches(pitches: number[]): MelodyAnalysis {
@@ -147,6 +191,10 @@ const MODE_PAIR_FOR_FINAL: Record<string, [ChurchMode, ChurchMode]> = {
   E: [3, 4],
   F: [5, 6],
   G: [7, 8],
+  // Glarean's 1547 additions (see types.ts's ChurchMode doc comment):
+  // Aeolian/Hypoaeolian (final A) and Ionian/Hypoionian (final C).
+  A: [9, 10],
+  C: [11, 12],
 };
 
 export interface ModeDetectionResult {
@@ -166,7 +214,7 @@ export function detectMode(analysis: MelodyAnalysis): ModeDetectionResult {
   const pair = MODE_PAIR_FOR_FINAL[finalLetter];
   if (!pair) {
     throw new Error(
-      `Antiphon final "${finalLetter}" is not one of the four standard finals (D, E, F, G); ` +
+      `Antiphon final "${finalLetter}" is not one of the six supported finals (D, E, F, G, A, C); ` +
         'mode detection needs a manual override for this melody.',
     );
   }

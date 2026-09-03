@@ -2,9 +2,24 @@ import {
   analyzeMelody,
   analyzeMelodyGabc,
   detectMode,
+  detectModeFromAbc,
   matchTone,
   catholicGregorianToneSet,
+  type ChurchMode,
+  type MelodyAnalysis,
+  type ModeConsistencyMatch,
+  type ModeRoot,
 } from '@psalmigen/engine';
+
+const ACCIDENTAL_SYMBOL = { sharp: '♯', flat: '♭', natural: '♮' } as const;
+
+function formatRoot(root: ModeRoot): string {
+  return root.accidental ? `${root.letter}${ACCIDENTAL_SYMBOL[root.accidental]}` : root.letter;
+}
+
+function formatMatch(match: ModeConsistencyMatch): string {
+  return `${formatRoot(match.root)} ${match.species}`;
+}
 
 export type AntiphonFormat = 'abc' | 'gabc';
 
@@ -111,29 +126,68 @@ export function createAntiphonInput(): AntiphonInputSection {
     ((toneSetId: string, toneId: string, differentiaIndex: number) => void) | undefined;
   let lastMatch: { toneSetId: string; toneId: string; differentiaIndex: number } | undefined;
 
+  // Mode detection is a standard simplification and can misclassify
+  // irregular melodies -- this suggestion is a starting point, not a
+  // verdict; there is no manual override control in v1 yet.
+  function suggestTone(mode: ChurchMode, analysis: MelodyAnalysis, headline: string): void {
+    const match = matchTone(catholicGregorianToneSet, mode, analysis);
+    const alternates =
+      match.alternates.length > 0
+        ? ` (alternate endings: ${match.alternates.map((a) => a.label).join(', ')})`
+        : '';
+    resultDiv.textContent = `${headline} Suggested tone: ${match.tone.name}, ending ${match.differentiaLabel}${alternates}`;
+    lastMatch = {
+      toneSetId: catholicGregorianToneSet.id,
+      toneId: match.tone.id,
+      differentiaIndex: match.differentiaIndex,
+    };
+    applyButton.style.display = '';
+  }
+
   analyzeButton.addEventListener('click', () => {
     resultDiv.textContent = '';
     applyButton.style.display = 'none';
     lastMatch = undefined;
     try {
-      const analysis =
-        format === 'abc' ? analyzeMelody(textarea.value) : analyzeMelodyGabc(textarea.value);
-      const { mode, finalLetter } = detectMode(analysis);
-      // Mode detection is a standard simplification and can misclassify
-      // irregular melodies -- this suggestion is a starting point, not a
-      // verdict; there is no manual override control in v1 yet.
-      const match = matchTone(catholicGregorianToneSet, mode, analysis);
-      const alternates =
-        match.alternates.length > 0
-          ? ` (alternate endings: ${match.alternates.map((a) => a.label).join(', ')})`
-          : '';
-      resultDiv.textContent = `Detected mode ${mode} (final ${finalLetter}). Suggested tone: ${match.tone.name}, ending ${match.differentiaLabel}${alternates}`;
-      lastMatch = {
-        toneSetId: catholicGregorianToneSet.id,
-        toneId: match.tone.id,
-        differentiaIndex: match.differentiaIndex,
-      };
-      applyButton.style.display = '';
+      if (format === 'abc') {
+        // Content-aware path: reads the melody's actual accidentals and key
+        // signature, so it won't mistake a transposed chant for whatever
+        // mode its bare final letter suggests, and won't name a mode the
+        // notes don't support. See the engine's detectModeFromAbc.
+        const detection = detectModeFromAbc(textarea.value);
+        if (detection.mode === undefined) {
+          resultDiv.textContent =
+            detection.matches.length === 0
+              ? `The notes used don't fit any diatonic mode ending on ${formatRoot(detection.root)} -- check for an accidental that doesn't belong, or a final you didn't intend.`
+              : `This reads as ${detection.matches.map(formatMatch).join(' or ')} -- a real mode, but not one this engine has psalm-tone data for, so there's no tone to suggest.`;
+          return;
+        }
+        // At most one match is ever canonical (see AbcModeDetection.mode),
+        // so this reads as a single name; the rest are what the melody
+        // doesn't say enough to rule out.
+        const named = detection.matches.filter((m) => m.churchMode !== undefined);
+        const others = detection.matches.filter((m) => m.churchMode === undefined);
+        const ambiguity =
+          others.length > 0
+            ? ` The melody doesn't use enough of the scale to rule out ${others.map(formatMatch).join(' or ')}.`
+            : '';
+        suggestTone(
+          detection.mode,
+          analyzeMelody(textarea.value),
+          `Detected mode ${detection.mode} (${named.map(formatMatch).join(', ')}).${ambiguity}`,
+        );
+      } else {
+        // GABC accidentals aren't read anywhere in the engine yet (see
+        // output/gabc.ts), so this input can only be classified by its
+        // final -- a transposed chant would be misread here.
+        const analysis = analyzeMelodyGabc(textarea.value);
+        const { mode, finalLetter } = detectMode(analysis);
+        suggestTone(
+          mode,
+          analysis,
+          `Detected mode ${mode} (final ${finalLetter}; GABC accidentals aren't read yet, so this is inferred from the final alone).`,
+        );
+      }
     } catch (err) {
       resultDiv.textContent = err instanceof Error ? err.message : String(err);
     }

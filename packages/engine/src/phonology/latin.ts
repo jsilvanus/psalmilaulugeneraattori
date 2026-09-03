@@ -10,11 +10,30 @@ const LA_DIPHTHONGS = new Set(['ae', 'oe', 'au', 'eu']);
 // s+stop combinations, common Greek-derived digraphs, and qu/gu (which are
 // always inseparable once the 'u' has been reclassified as a consonant).
 const LA_ONSET_CLUSTERS = new Set([
-  'pr', 'br', 'tr', 'dr', 'cr', 'gr', 'fr',
-  'pl', 'bl', 'cl', 'gl', 'fl',
-  'sp', 'st', 'sc', 'sm', 'sn', 'sq',
-  'ph', 'th', 'ch', 'gn',
-  'qu', 'gu',
+  'pr',
+  'br',
+  'tr',
+  'dr',
+  'cr',
+  'gr',
+  'fr',
+  'pl',
+  'bl',
+  'cl',
+  'gl',
+  'fl',
+  'sp',
+  'st',
+  'sc',
+  'sm',
+  'sn',
+  'sq',
+  'ph',
+  'th',
+  'ch',
+  'gn',
+  'qu',
+  'gu',
 ]);
 
 function isLatinVowelLetter(ch: string): boolean {
@@ -113,7 +132,9 @@ function buildSyllableInfos(core: string): SyllableInfo[] {
     i += hasConsonantAfter ? 2 : 1;
   }
 
-  return syllables.length > 0 ? syllables : [{ text: pendingOnset || core, nucleusLength: 0, endsInConsonant: false }];
+  return syllables.length > 0
+    ? syllables
+    : [{ text: pendingOnset || core, nucleusLength: 0, endsInConsonant: false }];
 }
 
 // Penultimate law, using the standard macron-free simplification: a syllable
@@ -123,7 +144,11 @@ function buildSyllableInfos(core: string): SyllableInfo[] {
 function assignStress(infos: SyllableInfo[]): Syllable[] {
   const n = infos.length;
   if (n <= 2) {
-    return infos.map((info, idx) => ({ text: info.text, hasStress: idx === 0, isPrimary: idx === 0 }));
+    return infos.map((info, idx) => ({
+      text: info.text,
+      hasStress: idx === 0,
+      isPrimary: idx === 0,
+    }));
   }
   const penultIndex = n - 2;
   const penult = infos[penultIndex]!;

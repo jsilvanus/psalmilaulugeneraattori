@@ -7,10 +7,24 @@ const FI_VOWELS = new Set(['a', 'e', 'i', 'o', 'u', 'y', 'ä', 'ö', 'å']);
 // hiatus (split into two syllables), as is a pair of non-identical vowels
 // not in this list.
 const FI_DIPHTHONGS = new Set([
-  'ai', 'ei', 'oi', 'ui', 'yi', 'äi', 'öi',
-  'au', 'eu', 'iu', 'ou',
-  'ey', 'iy', 'äy', 'öy',
-  'ie', 'uo', 'yö',
+  'ai',
+  'ei',
+  'oi',
+  'ui',
+  'yi',
+  'äi',
+  'öi',
+  'au',
+  'eu',
+  'iu',
+  'ou',
+  'ey',
+  'iy',
+  'äy',
+  'öy',
+  'ie',
+  'uo',
+  'yö',
 ]);
 
 function isFinnishVowel(ch: string): boolean {

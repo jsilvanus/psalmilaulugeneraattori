@@ -31,9 +31,29 @@ describe('analyzeMelody + detectMode', () => {
     expect(result).toEqual({ mode: 8, finalLetter: 'G' });
   });
 
-  it('throws when the final is not one of the four standard finals', () => {
-    // Final on A is not D/E/F/G -- mode detection needs a manual override.
-    expect(() => detect('A B c c B A |]')).toThrow();
+  it('detects mode 9 (A authentic, Aeolian): range stays at or above the final', () => {
+    const result = detect('A c e e e d c B A |]');
+    expect(result).toEqual({ mode: 9, finalLetter: 'A' });
+  });
+
+  it('detects mode 10 (A plagal, Hypoaeolian): range dips below the final, reciting a third above', () => {
+    const result = detect('E G A c c c B A |]');
+    expect(result).toEqual({ mode: 10, finalLetter: 'A' });
+  });
+
+  it('detects mode 11 (C authentic, Ionian): range stays at or above the final', () => {
+    const result = detect('C E G G G F E D C |]');
+    expect(result).toEqual({ mode: 11, finalLetter: 'C' });
+  });
+
+  it('detects mode 12 (C plagal, Hypoionian): range dips below the final, reciting a third above', () => {
+    const result = detect('G, B, C E E E D C |]');
+    expect(result).toEqual({ mode: 12, finalLetter: 'C' });
+  });
+
+  it('throws when the final is not one of the six supported finals', () => {
+    // Final on B is not D/E/F/G/A/C -- mode detection needs a manual override.
+    expect(() => detect('B c d d c B |]')).toThrow();
   });
 
   it('throws for an empty melody', () => {

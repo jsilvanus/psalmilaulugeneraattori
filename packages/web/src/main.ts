@@ -61,7 +61,10 @@ renderButton.addEventListener('click', () => {
       allCola.push(...fitVerse(cola, tone, isFirstVerseOfPsalm, differentiaIndex));
     });
 
-    renderPane.render(emitAbc(allCola, { title: 'Psalm' }), emitGabc(allCola));
+    renderPane.render(
+      emitAbc(allCola, { title: 'Psalm', hasBFlat: tone.hasBFlat }),
+      emitGabc(allCola),
+    );
   } catch (err) {
     if (err instanceof VerseParseError) {
       renderPane.renderError(`Parse error: ${err.message} (in "${err.line}")`);
