@@ -4,6 +4,7 @@ import {
   buildTone as buildToneBase,
   cadence,
   differentia,
+  dot,
   note,
 } from './toneBuilders.js';
 import type { ToneSpec } from './toneBuilders.js';
@@ -28,9 +29,14 @@ import type { ToneSpec } from './toneBuilders.js';
  * tokens, an optional leading `'` marks the accented (stressed-syllable)
  * note, an optional trailing `r` marks an "open" (elidable/reciting-tone)
  * notehead, and non-pitch characters (x = oriscus, v = scale-run ligature
- * marker, . = mora dot, uppercase = same ligature convention, case-
- * insensitive pitch) are stripped. Each tone's `final` (scale degree 0) is
- * anchored to the LAST pitch of that tone's canonical termination -- for
+ * marker, uppercase = same ligature convention, case-insensitive pitch)
+ * are stripped. A trailing `.` (occasionally `..`) marks a mora
+ * (augmentation) dot on that token's last pitch; across every mediant and
+ * termination string transcribed below it falls on the tune's very last
+ * note, matching the Solesmes convention of holding a cadence's final note
+ * -- captured here via `dot()` on that note, not stripped. Each tone's
+ * `final` (scale degree 0) is anchored to the LAST pitch of that tone's
+ * canonical termination -- for
  * tones with several labeled differentiae, the differentia whose own last
  * note matches the tone's number-name (e.g. Tonus I's "D") anchors it;
  * their other differentiae deliberately end elsewhere, which is the whole
@@ -88,84 +94,84 @@ const tones: ToneFormula[] = [
     id: 'tonus-1',
     name: 'Tonus I',
     reciting: 4,
-    mediant: cadence([], 3, [4, 4], accentPoint([], 5, [5, 4])),
+    mediant: cadence([], 3, [4, dot(4)], accentPoint([], 5, [5, 4])),
     termination: [
-      differentia('D', [3, 2], 3, [4, 3, 3, 2, 1, 0]),
-      differentia('D2', [], 3, [2, 0]),
-      differentia('f', [3, 2], 3, [4, 3, 3, 2]),
-      differentia('g', [3, 2], 3, [4, 3, 3]),
-      differentia('g2', [3, 2], 3, [3, 3, 4, 3]),
-      differentia('g3', [3, 2], 3, [3, 3]),
-      differentia('a', [3, 2], 3, [4, 4]),
-      differentia('a2', [3, 2], 3, [3, 3, 4]),
-      differentia('a3', [3, 2], 3, [4, 3, 3, 4]),
+      differentia('D', [3, 2], 3, [4, 3, 3, 2, 1, dot(0)]),
+      differentia('D2', [], 3, [2, dot(0)]),
+      differentia('f', [3, 2], 3, [4, 3, 3, dot(2)]),
+      differentia('g', [3, 2], 3, [4, 3, dot(3)]),
+      differentia('g2', [3, 2], 3, [3, 3, 4, dot(3)]),
+      differentia('g3', [3, 2], 3, [3, dot(3)]),
+      differentia('a', [3, 2], 3, [4, dot(4)]),
+      differentia('a2', [3, 2], 3, [3, 3, dot(4)]),
+      differentia('a3', [3, 2], 3, [4, 3, 3, dot(4)]),
     ],
   }),
   buildTone({
     id: 'tonus-2',
     name: 'Tonus II',
     reciting: 2,
-    mediant: cadence([], 3, [2, 2]),
-    termination: [differentia(undefined, [1], -1, [0, 0])],
+    mediant: cadence([], 3, [2, dot(2)]),
+    termination: [differentia(undefined, [1], -1, [0, dot(0)])],
   }),
   buildTone({
     id: 'tonus-3',
     name: 'Tonus III',
     reciting: 1,
-    mediant: cadence([], 0, [-1, 1], accentPoint([], 2, [1, 1])),
+    mediant: cadence([], 0, [-1, dot(1)], accentPoint([], 2, [1, 1])),
     termination: [
-      differentia('b', [-1], 1, [1, 0]),
-      differentia('a', [-1], 1, [1, 0, -1]),
-      differentia('a2', [1, 0, -1, 0], -1, [-2, -2, -1]),
-      differentia('g', [1, 0, -1, 0], -1, [-2, -2]),
-      differentia('g2', [-1, 1, 0], -1, [-2, -2]),
+      differentia('b', [-1], 1, [1, dot(0)]),
+      differentia('a', [-1], 1, [1, 0, dot(-1)]),
+      differentia('a2', [1, 0, -1, 0], -1, [-2, -2, dot(-1)]),
+      differentia('g', [1, 0, -1, 0], -1, [-2, dot(-2)]),
+      differentia('g2', [-1, 1, 0], -1, [-2, dot(-2)]),
     ],
   }),
   buildTone({
     id: 'tonus-4',
     name: 'Tonus IV',
     reciting: 1,
-    mediant: cadence([0, 1], 2, [1, 1]),
-    termination: [differentia('g', [], 1, [0, 0]), differentia('E', [], 0, [-1, -2])],
+    mediant: cadence([0, 1], 2, [1, dot(1)]),
+    termination: [differentia('g', [], 1, [0, dot(0)]), differentia('E', [], 0, [-1, dot(-2)])],
   }),
   buildTone({
     id: 'tonus-5',
     name: 'Tonus V',
     reciting: 2,
     hasBFlat: true,
-    mediant: cadence([], 3, [2, 2]),
-    termination: [differentia(undefined, [], 2, [0, 0], accentPoint([], 3, [1]))],
+    mediant: cadence([], 3, [2, dot(2)]),
+    termination: [differentia(undefined, [], 2, [0, dot(0)], accentPoint([], 3, [1]))],
   }),
   buildTone({
     id: 'tonus-6',
     name: 'Tonus VI',
     reciting: 2,
     hasBFlat: true,
-    mediant: cadence([], 1, [2, 2], accentPoint([], 3, [3, 2])),
-    termination: [differentia(undefined, [0, 1, 2], 1, [0, 0])],
+    mediant: cadence([], 1, [2, dot(2)], accentPoint([], 3, [3, 2])),
+    termination: [differentia(undefined, [0, 1, 2], 1, [0, dot(0)])],
   }),
   buildTone({
     id: 'tonus-7',
     name: 'Tonus VII',
     reciting: 4,
-    mediant: cadence([], 3, [4, 4], accentPoint([], 5, [4])),
+    mediant: cadence([], 3, [4, dot(4)], accentPoint([], 5, [4])),
     termination: [
-      differentia('a', [], 2, [2, 1, 0], accentPoint([], 4, [3])),
-      differentia('b', [], 2, [2, 1], accentPoint([], 4, [3])),
-      differentia('c', [], 2, [2, 1, 2], accentPoint([], 4, [3])),
-      differentia('c2', [], 2, [2, 3, 2], accentPoint([], 4, [3])),
-      differentia('d', [], 2, [2, 1, 3], accentPoint([], 4, [3])),
+      differentia('a', [], 2, [2, 1, dot(0)], accentPoint([], 4, [3])),
+      differentia('b', [], 2, [2, dot(1)], accentPoint([], 4, [3])),
+      differentia('c', [], 2, [2, 1, dot(2)], accentPoint([], 4, [3])),
+      differentia('c2', [], 2, [2, 3, dot(2)], accentPoint([], 4, [3])),
+      differentia('d', [], 2, [2, 1, dot(3)], accentPoint([], 4, [3])),
     ],
   }),
   buildTone({
     id: 'tonus-8',
     name: 'Tonus VIII',
     reciting: 3,
-    mediant: cadence([], 4, [3, 3]),
+    mediant: cadence([], 4, [3, dot(3)]),
     termination: [
-      differentia('G', [2, 3], 1, [0, 0]),
-      differentia('G*', [2, 3], 1, [0, 0, 1]),
-      differentia('c', [1, 3], 4, [3, 3]),
+      differentia('G', [2, 3], 1, [0, dot(0)]),
+      differentia('G*', [2, 3], 1, [0, 0, dot(1)]),
+      differentia('c', [1, 3], 4, [3, dot(3)]),
     ],
   }),
 ];
@@ -175,8 +181,8 @@ const tonusPeregrinus: ToneFormula = buildTone({
   name: 'Tonus Peregrinus',
   reciting: 4, // A, for the verse's first half
   secondReciting: 3, // G, for the verse's second half -- the tone's namesake asymmetry
-  mediant: cadence([3, 5, 5, 4], 3, [2, 2]),
-  termination: [differentia(undefined, [0], 2, [2, 1, 0])],
+  mediant: cadence([3, 5, 5, 4], 3, [2, dot(2)]),
+  termination: [differentia(undefined, [0], 2, [2, 1, dot(0)])],
 });
 
 export const catholicGregorianToneSet: ToneSet = {

@@ -30,6 +30,15 @@ function normalizeCadenceNote(input: CadenceNoteInput): CadenceNote {
   return typeof input === 'number' ? note(input) : input;
 }
 
+/**
+ * Marks a cadence-array element (a bare degree or an already-built
+ * CadenceNote) as carrying an augmentation ("mora") dot -- see
+ * CadenceNote.dotted.
+ */
+export function dot(input: CadenceNoteInput): CadenceNote {
+  return { ...normalizeCadenceNote(input), dotted: true };
+}
+
 export function accentPoint(
   preparatory: CadenceNoteInput[],
   accentNote: CadenceNoteInput,

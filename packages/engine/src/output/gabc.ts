@@ -23,8 +23,16 @@ function gabcPitchLetter(degree: ScaleDegree): string {
   return letter;
 }
 
+// GABC marks an augmentation (mora) dot with a literal "." directly after
+// the pitch letter it lengthens -- see catholicGregorian.ts's DATA SOURCE
+// comment for the source convention this mirrors.
+function gabcNote(n: CadenceNote): string {
+  const letter = gabcPitchLetter(n.degree);
+  return n.dotted ? `${letter}.` : letter;
+}
+
 function emitSyllable(text: string, notes: CadenceNote[]): string {
-  return `${text}(${notes.map((n) => gabcPitchLetter(n.degree)).join('')})`;
+  return `${text}(${notes.map(gabcNote).join('')})`;
 }
 
 const BOUNDARY_MARKER: Record<PitchedColon['role'], string> = {

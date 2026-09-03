@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emitGabc } from '../src/output/gabc.js';
 import type { PitchedColon } from '../src/tone/fit.js';
-import { note } from '../src/tone/toneSets/toneBuilders.js';
+import { dot, note } from '../src/tone/toneSets/toneBuilders.js';
 
 const cola: PitchedColon[] = [
   {
@@ -33,5 +33,15 @@ describe('emitGabc', () => {
       { role: 'termination', syllables: [{ text: 'x', notes: [note(50)], isWordStart: true }] },
     ];
     expect(() => emitGabc(outOfRange)).toThrow();
+  });
+
+  it("renders a syllable's dotted CadenceNote with a trailing mora dot", () => {
+    const withDot: PitchedColon[] = [
+      {
+        role: 'termination',
+        syllables: [{ text: 'a', notes: [note(1), dot(0)], isWordStart: true }],
+      },
+    ];
+    expect(emitGabc(withDot)).toBe('a(ih.) ::');
   });
 });

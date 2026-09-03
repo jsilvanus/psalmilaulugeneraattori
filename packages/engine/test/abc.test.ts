@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { abcPitch, emitAbc } from '../src/output/abc.js';
 import type { PitchedColon } from '../src/tone/fit.js';
-import { note } from '../src/tone/toneSets/toneBuilders.js';
+import { dot, note } from '../src/tone/toneSets/toneBuilders.js';
 
 const cola: PitchedColon[] = [
   {
@@ -65,6 +65,14 @@ describe('emitAbc', () => {
     const out = emitAbc(withAccidental);
     expect(out.split('\n')[4]).toBe('^G, |]');
   });
+
+  it("renders a syllable's dotted CadenceNote with ABC's 3/2 length multiplier", () => {
+    const withDot: PitchedColon[] = [
+      { role: 'termination', syllables: [{ text: 'x', notes: [dot(4)], isWordStart: true }] },
+    ];
+    const out = emitAbc(withDot);
+    expect(out.split('\n')[4]).toBe('G,3/2 |]');
+  });
 });
 
 describe('abcPitch', () => {
@@ -73,5 +81,10 @@ describe('abcPitch', () => {
     expect(abcPitch(4, 'sharp')).toBe('^G,');
     expect(abcPitch(4, 'flat')).toBe('_G,');
     expect(abcPitch(4, 'natural')).toBe('=G,');
+  });
+
+  it("appends ABC's 3/2 length multiplier for a dotted note", () => {
+    expect(abcPitch(4, undefined, true)).toBe('G,3/2');
+    expect(abcPitch(4, 'sharp', true)).toBe('^G,3/2');
   });
 });
